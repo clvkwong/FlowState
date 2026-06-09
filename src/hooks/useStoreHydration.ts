@@ -9,21 +9,19 @@ export function useStoreHydration(): boolean {
   const habitHydrated = useHabitStore((s) => s._hasHydrated);
   const logHydrated = useLogStore((s) => s._hasHydrated);
   const restoreFromMMKV = useAuthStore((s) => s.restoreFromMMKV);
-  const [bootstrapped, setBootstrapped] = useState(false);
 
   useEffect(() => {
-    if (bootstrapped || isLoading) {
+    console.log("useStoreHydration", isLoading, user);
+    if (isLoading) {
       return;
     }
-
-    setBootstrapped(true);
 
     if (!user) {
       return;
     }
 
     restoreFromMMKV().catch(console.error);
-  }, [bootstrapped, isLoading, user, restoreFromMMKV]);
+  }, [isLoading, user, restoreFromMMKV]);
 
   if (!user) return true;
   return habitHydrated && logHydrated;
