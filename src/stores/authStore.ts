@@ -1,10 +1,17 @@
-import { create } from 'zustand';
-import type { User } from 'firebase/auth';
-import * as authService from '@/services/authService';
-import { hydrateUserData } from '@/services/hydrateService';
-import { clearUserPersist } from '@/storage/persistKeys';
-import { rehydrateHabitStore, useHabitStore, clearHabitStorePersist } from '@/stores/habitStore';
-import { rehydrateLogStore, useLogStore, clearLogStorePersist } from '@/stores/logStore';
+import { create } from "zustand";
+import type { User } from "firebase/auth";
+import * as authService from "@/services/authService";
+import { hydrateUserData } from "@/services/hydrateService";
+import {
+  rehydrateHabitStore,
+  useHabitStore,
+  clearHabitStorePersist,
+} from "@/stores/habitStore";
+import {
+  rehydrateLogStore,
+  useLogStore,
+  clearLogStorePersist,
+} from "@/stores/logStore";
 
 interface AuthState {
   user: User | null;
@@ -17,7 +24,7 @@ interface AuthState {
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   hydrateFromFirestore: (userId: string) => Promise<void>;
-  restoreFromMMKV: (userId: string) => Promise<void>;
+  restoreFromMMKV: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -29,16 +36,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setAuthReady: (isAuthReady) => set({ isAuthReady }),
   hydrateFromFirestore: async (userId) => {
     const { habits, logs } = await hydrateUserData(userId);
-    useHabitStore.getState().setHabits(habits);
-    useLogStore.getState().setLogs(logs);
+    useHabitStore.getState().hydrateFromDB(habits);
+    useLogStore.getState().hydrateFromDB(logs);
   },
-  restoreFromMMKV: async (userId) => {
-    await Promise.all([rehydrateHabitStore(userId), rehydrateLogStore(userId)]);
+  restoreFromMMKV: async () => {
+    await Promise.all([rehydrateHabitStore(), rehydrateLogStore()]);
   },
   signIn: async (email, password) => {
     const user = await authService.signIn(email, password);
     set({ user });
-    await get().restoreFromMMKV(user.uid);
     await get().hydrateFromFirestore(user.uid);
   },
   signUp: async (email, password) => {
@@ -46,8 +52,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user });
     useHabitStore.getState().reset();
     useLogStore.getState().reset();
-    await get().restoreFromMMKV(user.uid);
-    await get().hydrateFromFirestore(user.uid);
   },
   signOut: async () => {
     const userId = get().user?.uid;
@@ -55,10 +59,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     useHabitStore.getState().reset();
     useLogStore.getState().reset();
     if (userId) {
-      clearUserPersist(userId);
-      clearHabitStorePersist(userId);
-      clearLogStorePersist(userId);
+      clearHabitStorePersist();
+      clearLogStorePersist();
     }
     set({ user: null, isAuthReady: false });
   },
 }));
+
+export function getAuthUserUid(): string | undefined {
+  return useAuthStore.getState().user?.uid;
+}

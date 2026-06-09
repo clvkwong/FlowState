@@ -1,9 +1,9 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import * as habitService from '@/services/habitService';
-import { getHabitPersistKey } from '@/storage/persistKeys';
-import { storage } from '@/storage/mmkv';
-import type { CreateHabitInput, Habit, UpdateHabitInput } from '@/types/habit';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import * as habitService from "@/services/habitService";
+import { getHabitPersistKey } from "@/storage/persistKeys";
+import { storage } from "@/storage/mmkv";
+import type { CreateHabitInput, Habit, UpdateHabitInput } from "@/types/habit";
 
 interface HabitState {
   habits: Habit[];
@@ -17,22 +17,22 @@ interface HabitState {
   updateHabit: (habitId: string, input: UpdateHabitInput) => Promise<void>;
   deleteHabit: (userId: string, habitId: string) => Promise<void>;
   setHasHydrated: (value: boolean) => void;
+  hydrateFromDB: (habits: Habit[]) => void;
 }
 
-let activeUserId: string | null = null;
+let isRehydrating = false;
 
 const habitStorage = {
   getItem: (): string | null => {
-    if (!activeUserId) return null;
-    return storage.getString(getHabitPersistKey(activeUserId)) ?? null;
+    return storage.getString(getHabitPersistKey()) ?? null;
   },
   setItem: (_name: string, value: string): void => {
-    if (!activeUserId) return;
-    storage.set(getHabitPersistKey(activeUserId), value);
+    if (isRehydrating) return;
+    storage.set(getHabitPersistKey(), value);
   },
   removeItem: (): void => {
-    if (!activeUserId) return;
-    storage.remove(getHabitPersistKey(activeUserId));
+    if (isRehydrating) return;
+    storage.remove(getHabitPersistKey());
   },
 };
 
@@ -45,7 +45,9 @@ export const useHabitStore = create<HabitState>()(
       addHabit: (habit) => set({ habits: [...get().habits, habit] }),
       updateHabitLocal: (habitId, updates) =>
         set({
-          habits: get().habits.map((h) => (h.id === habitId ? { ...h, ...updates } : h)),
+          habits: get().habits.map((h) =>
+            h.id === habitId ? { ...h, ...updates } : h,
+          ),
         }),
       removeHabit: (habitId) =>
         set({ habits: get().habits.filter((h) => h.id !== habitId) }),
@@ -64,9 +66,10 @@ export const useHabitStore = create<HabitState>()(
         await habitService.deleteHabit(habitId);
         get().removeHabit(habitId);
       },
+      hydrateFromDB: (habits) => set({ habits, _hasHydrated: true }),
     }),
     {
-      name: 'habit-store',
+      name: "habit-store",
       storage: createJSONStorage(() => habitStorage),
       skipHydration: true,
       partialize: (state) => ({ habits: state.habits }),
@@ -77,13 +80,16 @@ export const useHabitStore = create<HabitState>()(
   ),
 );
 
-export async function rehydrateHabitStore(userId: string): Promise<void> {
-  activeUserId = userId;
-  useHabitStore.setState({ _hasHydrated: false });
-  await useHabitStore.persist.rehydrate();
+export async function rehydrateHabitStore(): Promise<void> {
+  isRehydrating = true;
+  try {
+    useHabitStore.setState({ _hasHydrated: false });
+    await useHabitStore.persist.rehydrate();
+  } finally {
+    isRehydrating = false;
+  }
 }
 
-export function clearHabitStorePersist(userId: string): void {
-  storage.remove(getHabitPersistKey(userId));
-  activeUserId = null;
+export function clearHabitStorePersist(): void {
+  storage.remove(getHabitPersistKey());
 }

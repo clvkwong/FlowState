@@ -1,10 +1,10 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import * as logService from '@/services/logService';
-import { getLogPersistKey } from '@/storage/persistKeys';
-import { storage } from '@/storage/mmkv';
-import type { CompletedRoutineTask, HabitLog } from '@/types/log';
-import { todayString } from '@/utils/date';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import * as logService from "@/services/logService";
+import { getLogPersistKey } from "@/storage/persistKeys";
+import { storage } from "@/storage/mmkv";
+import type { CompletedRoutineTask, HabitLog } from "@/types/log";
+import { todayString } from "@/utils/date";
 
 interface LogState {
   logs: HabitLog[];
@@ -14,8 +14,17 @@ interface LogState {
   removeLogsForHabit: (habitId: string) => void;
   reset: () => void;
   setHasHydrated: (value: boolean) => void;
-  logCheck: (userId: string, habitId: string, completed: boolean) => Promise<HabitLog>;
-  incrementCount: (userId: string, habitId: string, target: number) => Promise<HabitLog>;
+  hydrateFromDB: (logs: HabitLog[]) => void;
+  logCheck: (
+    userId: string,
+    habitId: string,
+    completed: boolean,
+  ) => Promise<HabitLog>;
+  incrementCount: (
+    userId: string,
+    habitId: string,
+    target: number,
+  ) => Promise<HabitLog>;
   completeRoutineStep: (
     userId: string,
     habitId: string,
@@ -25,25 +34,27 @@ interface LogState {
   deleteLogsForHabitRemote: (userId: string, habitId: string) => Promise<void>;
 }
 
-let activeUserId: string | null = null;
+let isRehydrating = false;
 
 const logStorage = {
   getItem: (): string | null => {
-    if (!activeUserId) return null;
-    return storage.getString(getLogPersistKey(activeUserId)) ?? null;
+    return storage.getString(getLogPersistKey()) ?? null;
   },
   setItem: (_name: string, value: string): void => {
-    if (!activeUserId) return;
-    storage.set(getLogPersistKey(activeUserId), value);
+    if (isRehydrating) return;
+    storage.set(getLogPersistKey(), value);
   },
   removeItem: (): void => {
-    if (!activeUserId) return;
-    storage.remove(getLogPersistKey(activeUserId));
+    if (isRehydrating) return;
+    storage.remove(getLogPersistKey());
   },
 };
 
 function upsertInArray(logs: HabitLog[], log: HabitLog): HabitLog[] {
-  const index = logs.findIndex((l) => l.id === log.id || (l.habitId === log.habitId && l.date === log.date));
+  const index = logs.findIndex(
+    (l) =>
+      l.id === log.id || (l.habitId === log.habitId && l.date === log.date),
+  );
   if (index >= 0) {
     const next = [...logs];
     next[index] = log;
@@ -63,15 +74,23 @@ export const useLogStore = create<LogState>()(
         set({ logs: get().logs.filter((l) => l.habitId !== habitId) }),
       reset: () => set({ logs: [], _hasHydrated: false }),
       setHasHydrated: (value) => set({ _hasHydrated: value }),
+      hydrateFromDB: (logs) => set({ logs, _hasHydrated: true }),
       logCheck: async (userId, habitId, completed) => {
         const date = todayString();
-        const log = await logService.upsertLog({ userId, habitId, date, completed });
+        const log = await logService.upsertLog({
+          userId,
+          habitId,
+          date,
+          completed,
+        });
         get().upsertLogLocal(log);
         return log;
       },
       incrementCount: async (userId, habitId, target) => {
         const date = todayString();
-        const existing = get().logs.find((l) => l.habitId === habitId && l.date === date);
+        const existing = get().logs.find(
+          (l) => l.habitId === habitId && l.date === date,
+        );
         const nextCount = Math.min((existing?.count ?? 0) + 1, target);
         const completed = nextCount >= target;
         const log = await logService.upsertLog({
@@ -86,7 +105,9 @@ export const useLogStore = create<LogState>()(
       },
       completeRoutineStep: async (userId, habitId, step, isFinalStep) => {
         const date = todayString();
-        const existing = get().logs.find((l) => l.habitId === habitId && l.date === date);
+        const existing = get().logs.find(
+          (l) => l.habitId === habitId && l.date === date,
+        );
         const completedTasks = [...(existing?.completedTasks ?? []), step];
         const completed = isFinalStep;
         const log = await logService.upsertLog({
@@ -105,7 +126,7 @@ export const useLogStore = create<LogState>()(
       },
     }),
     {
-      name: 'log-store',
+      name: "log-store",
       storage: createJSONStorage(() => logStorage),
       skipHydration: true,
       partialize: (state) => ({ logs: state.logs }),
@@ -116,13 +137,16 @@ export const useLogStore = create<LogState>()(
   ),
 );
 
-export async function rehydrateLogStore(userId: string): Promise<void> {
-  activeUserId = userId;
-  useLogStore.setState({ _hasHydrated: false });
-  await useLogStore.persist.rehydrate();
+export async function rehydrateLogStore(): Promise<void> {
+  isRehydrating = true;
+  try {
+    useLogStore.setState({ _hasHydrated: false });
+    await useLogStore.persist.rehydrate();
+  } finally {
+    isRehydrating = false;
+  }
 }
 
-export function clearLogStorePersist(userId: string): void {
-  storage.remove(getLogPersistKey(userId));
-  activeUserId = null;
+export function clearLogStorePersist(): void {
+  storage.remove(getLogPersistKey());
 }
