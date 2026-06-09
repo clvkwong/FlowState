@@ -11,7 +11,6 @@ export function useStoreHydration(): boolean {
   const restoreFromMMKV = useAuthStore((s) => s.restoreFromMMKV);
 
   useEffect(() => {
-    console.log("useStoreHydration", isLoading, user);
     if (isLoading) {
       return;
     }
