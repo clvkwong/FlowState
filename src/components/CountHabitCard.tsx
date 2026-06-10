@@ -1,10 +1,17 @@
-import { useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
-import { ProgressRing } from '@/components/ProgressRing';
-import { borderRadius, colors, getHabitAccent, spacing, typography, withOpacity } from '@/constants/theme';
-import type { Habit } from '@/types/habit';
-import type { HabitLog } from '@/types/log';
-import { getCountProgress, isCountCompleted } from '@/utils/habitLogic';
+import { useRef } from "react";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { ProgressRing } from "@/components/ProgressRing";
+import {
+  borderRadius,
+  colors,
+  getHabitAccent,
+  spacing,
+  typography,
+  withOpacity,
+} from "@/constants/theme";
+import type { Habit } from "@/types/habit";
+import type { HabitLog } from "@/types/log";
+import { getCountProgress, isCountCompleted } from "@/utils/habitLogic";
 
 interface CountHabitCardProps {
   habit: Habit;
@@ -13,17 +20,29 @@ interface CountHabitCardProps {
   onLongPress?: () => void;
 }
 
-export function CountHabitCard({ habit, log, onIncrement, onLongPress }: CountHabitCardProps) {
+export function CountHabitCard({
+  habit,
+  log,
+  onIncrement,
+  onLongPress,
+}: CountHabitCardProps) {
   const completed = isCountCompleted(habit, log);
-  const accent = getHabitAccent('count');
+  const accent = getHabitAccent("count");
   const progress = getCountProgress(habit, log);
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePress = () => {
-    if (completed) return;
     Animated.sequence([
-      Animated.timing(scale, { toValue: 1.04, duration: 100, useNativeDriver: true }),
-      Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }),
+      Animated.timing(scale, {
+        toValue: 1.04,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
     ]).start();
     onIncrement();
   };
@@ -34,7 +53,10 @@ export function CountHabitCard({ habit, log, onIncrement, onLongPress }: CountHa
         style={[
           styles.card,
           completed
-            ? { backgroundColor: withOpacity(accent, 0.15), borderColor: accent }
+            ? {
+                backgroundColor: withOpacity(accent, 0.15),
+                borderColor: accent,
+              }
             : { borderColor: accent },
           { transform: [{ scale }] },
         ]}
@@ -63,9 +85,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: 2,
     padding: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     minHeight: 88,
   },
   content: {
@@ -80,7 +102,7 @@ const styles = StyleSheet.create({
   type: {
     ...typography.caption,
     letterSpacing: 1.5,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   sub: {
     ...typography.body,
