@@ -7,3 +7,7 @@ export function getHabitPersistKey(): string {
 export function getLogPersistKey(): string {
   return `flowstate-logs`;
 }
+
+export function getRoutineSessionPersistKey(): string {
+  return `flowstate-routine-session`;
+}
