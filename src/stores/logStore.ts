@@ -91,7 +91,7 @@ export const useLogStore = create<LogState>()(
         const existing = get().logs.find(
           (l) => l.habitId === habitId && l.date === date,
         );
-        const nextCount = Math.min((existing?.count ?? 0) + 1, target);
+        const nextCount = (existing?.count ?? 0) + 1;
         const completed = nextCount >= target;
         const log = await logService.upsertLog({
           userId,
