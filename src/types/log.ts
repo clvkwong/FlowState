@@ -21,4 +21,5 @@ export interface UpsertLogInput {
   completed: boolean;
   count?: number;
   completedTasks?: CompletedRoutineTask[];
+  startedAt?: number;
 }
