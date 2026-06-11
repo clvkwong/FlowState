@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { User } from "firebase/auth";
+
 import * as authService from "@/services/authService";
 import { hydrateUserData } from "@/services/hydrateService";
 import {
@@ -12,6 +13,11 @@ import {
   useLogStore,
   clearLogStorePersist,
 } from "@/stores/logStore";
+import {
+  clearRoutineSessionStorePersist,
+  rehydrateRoutineSessionStore,
+  useRoutineSessionStore,
+} from "./routineSessionStore";
 
 interface AuthState {
   user: User | null;
@@ -40,7 +46,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     useLogStore.getState().hydrateFromDB(logs);
   },
   restoreFromMMKV: async () => {
-    await Promise.all([rehydrateHabitStore(), rehydrateLogStore()]);
+    await Promise.all([
+      rehydrateHabitStore(),
+      rehydrateLogStore(),
+      rehydrateRoutineSessionStore(),
+    ]);
   },
   signIn: async (email, password) => {
     const user = await authService.signIn(email, password);
@@ -52,15 +62,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user });
     useHabitStore.getState().reset();
     useLogStore.getState().reset();
+    useRoutineSessionStore.getState().reset();
   },
   signOut: async () => {
     const userId = get().user?.uid;
     await authService.signOut();
     useHabitStore.getState().reset();
     useLogStore.getState().reset();
+    useRoutineSessionStore.getState().reset();
     if (userId) {
       clearHabitStorePersist();
       clearLogStorePersist();
+      clearRoutineSessionStorePersist();
     }
     set({ user: null, isAuthReady: false });
   },
