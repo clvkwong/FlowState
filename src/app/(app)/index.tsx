@@ -1,23 +1,32 @@
-import { useRouter } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { CompletionSummary } from '@/components/CompletionSummary';
-import { HabitCard } from '@/components/HabitCard';
-import { borderRadius, colors, spacing, typography } from '@/constants/theme';
-import { useAuthStore } from '@/stores/authStore';
-import { useHabitStore } from '@/stores/habitStore';
-import { useLogStore } from '@/stores/logStore';
-import { formatDisplayDate, todayString } from '@/utils/date';
-import { getLogForHabit, getTodayCompletionSummary } from '@/utils/habitLogic';
+import { useCallback, useEffect } from "react";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useRouter, useSegments } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { borderRadius, colors, spacing, typography } from "@/constants/theme";
+
+import { useAuthStore } from "@/stores/authStore";
+import { useHabitStore } from "@/stores/habitStore";
+import { useLogStore } from "@/stores/logStore";
+import { useRoutineSessionStore } from "@/stores/routineSessionStore";
+import { formatDisplayDate, todayString } from "@/utils/date";
+import { getLogForHabit, getTodayCompletionSummary } from "@/utils/habitLogic";
+
+import { CompletionSummary } from "@/components/CompletionSummary";
+import { HabitCard } from "@/components/HabitCard";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const pathSegments = useSegments();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const habits = useHabitStore((s) => s.habits);
   const logs = useLogStore((s) => s.logs);
+  const activeRoutineSession = useRoutineSessionStore((s) => s.activeSession);
+
   const logCheck = useLogStore((s) => s.logCheck);
   const incrementCount = useLogStore((s) => s.incrementCount);
+  const startRoutineSession = useRoutineSessionStore((s) => s.startSession);
 
   const today = todayString();
   const summary = getTodayCompletionSummary(habits, logs, today);
@@ -32,8 +41,21 @@ export default function HomeScreen() {
     await incrementCount(user.uid, habitId, target);
   };
 
+  const handleRoutinePress = useCallback(
+    (habitId: string) => {
+      startRoutineSession(habitId);
+    },
+    [startRoutineSession, router],
+  );
+
+  useEffect(() => {
+    if (pathSegments[1] !== "routine" && activeRoutineSession?.habitId) {
+      router.push(`/(app)/routine/${activeRoutineSession.habitId}`);
+    }
+  }, [pathSegments, activeRoutineSession]);
+
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={["top"]}>
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>FlowState</Text>
@@ -45,15 +67,23 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.summary}>
-        <CompletionSummary completed={summary.completed} total={summary.total} />
+        <CompletionSummary
+          completed={summary.completed}
+          total={summary.total}
+        />
       </View>
 
       {habits.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>⚡</Text>
           <Text style={styles.emptyTitle}>No habits yet</Text>
-          <Text style={styles.emptyBody}>Create your first habit and start building momentum.</Text>
-          <Pressable style={styles.emptyCta} onPress={() => router.push('/(app)/habit/new')}>
+          <Text style={styles.emptyBody}>
+            Create your first habit and start building momentum.
+          </Text>
+          <Pressable
+            style={styles.emptyCta}
+            onPress={() => router.push("/(app)/habit/new")}
+          >
             <Text style={styles.emptyCtaText}>Create Habit</Text>
           </Pressable>
         </View>
@@ -68,7 +98,7 @@ export default function HomeScreen() {
               log={getLogForHabit(logs, item.id, today)}
               onCheckToggle={handleCheckToggle}
               onCountIncrement={handleCountIncrement}
-              onRoutinePress={(id) => router.push(`/(app)/routine/${id}`)}
+              onRoutinePress={handleRoutinePress}
               onEdit={(id) => router.push(`/(app)/habit/${id}/edit`)}
             />
           )}
@@ -76,7 +106,10 @@ export default function HomeScreen() {
       )}
 
       {habits.length > 0 ? (
-        <Pressable style={styles.fab} onPress={() => router.push('/(app)/habit/new')}>
+        <Pressable
+          style={styles.fab}
+          onPress={() => router.push("/(app)/habit/new")}
+        >
           <Text style={styles.fabText}>+</Text>
         </Pressable>
       ) : null}
@@ -90,9 +123,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
@@ -123,8 +156,8 @@ const styles = StyleSheet.create({
   },
   empty: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: spacing.xl,
     gap: spacing.sm,
   },
@@ -138,7 +171,7 @@ const styles = StyleSheet.create({
   emptyBody: {
     ...typography.body,
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptyCta: {
     marginTop: spacing.md,
@@ -153,15 +186,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: spacing.lg,
     bottom: spacing.lg,
     width: 60,
     height: 60,
     borderRadius: borderRadius.pill,
     backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: colors.primary,
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -171,6 +204,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: colors.textPrimary,
     lineHeight: 34,
-    fontWeight: '300',
+    fontWeight: "300",
   },
 });
