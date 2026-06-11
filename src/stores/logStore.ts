@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import * as logService from "@/services/logService";
+
+import type { HabitLog } from "@/types/log";
+import { RoutineSession } from "@/types/routineSession";
 import { getLogPersistKey } from "@/storage/persistKeys";
 import { storage } from "@/storage/mmkv";
-import type { CompletedRoutineTask, HabitLog } from "@/types/log";
+import * as logService from "@/services/logService";
 import { todayString } from "@/utils/date";
 
 interface LogState {
@@ -25,11 +27,9 @@ interface LogState {
     habitId: string,
     target: number,
   ) => Promise<HabitLog>;
-  completeRoutineStep: (
+  completeRoutine: (
     userId: string,
-    habitId: string,
-    step: CompletedRoutineTask,
-    isFinalStep: boolean,
+    session: RoutineSession,
   ) => Promise<HabitLog>;
   deleteLogsForHabitRemote: (userId: string, habitId: string) => Promise<void>;
 }
@@ -103,19 +103,15 @@ export const useLogStore = create<LogState>()(
         get().upsertLogLocal(log);
         return log;
       },
-      completeRoutineStep: async (userId, habitId, step, isFinalStep) => {
+      completeRoutine: async (userId, session) => {
         const date = todayString();
-        const existing = get().logs.find(
-          (l) => l.habitId === habitId && l.date === date,
-        );
-        const completedTasks = [...(existing?.completedTasks ?? []), step];
-        const completed = isFinalStep;
         const log = await logService.upsertLog({
           userId,
-          habitId,
+          habitId: session.habitId,
           date,
-          completed,
-          completedTasks,
+          completed: true,
+          completedTasks: session.completedTasks,
+          startedAt: session.startedAt,
         });
         get().upsertLogLocal(log);
         return log;
