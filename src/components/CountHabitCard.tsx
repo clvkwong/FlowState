@@ -1,7 +1,6 @@
 import { useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
-import { ProgressRing } from "@/components/ProgressRing";
-import { HabitHeatMap } from "@/components/HabitHeatMap";
+
 import {
   borderRadius,
   colors,
@@ -13,6 +12,9 @@ import {
 import type { Habit } from "@/types/habit";
 import type { HabitLog } from "@/types/log";
 import { getCountProgress, isCountCompleted } from "@/utils/habitLogic";
+
+import { ProgressRing } from "@/components/ProgressRing";
+import { HabitHeatMap } from "@/components/HabitHeatMap";
 
 interface CountHabitCardProps {
   habit: Habit;
@@ -60,16 +62,19 @@ export function CountHabitCard({
                 backgroundColor: withOpacity(accent, 0.15),
                 borderColor: accent,
               }
-          : { borderColor: accent },
+            : { borderColor: accent },
           { transform: [{ scale }] },
         ]}
       >
         <View style={styles.topRow}>
           <View style={styles.content}>
             <Text style={styles.name}>{habit.name}</Text>
-            <Text style={[styles.type, { color: accent }]}>COUNT</Text>
-            <Text style={styles.sub}>
-              {progress.current} / {progress.target}
+            <Text style={styles.type}>
+              <Text style={{ color: accent }}>COUNT</Text>
+              <Text style={styles.sub}>
+                {" "}
+                • {progress.current} / {progress.target}
+              </Text>
             </Text>
           </View>
           <ProgressRing
@@ -115,8 +120,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   sub: {
-    ...typography.body,
     color: colors.textSecondary,
-    fontSize: 14,
   },
 });

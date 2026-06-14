@@ -1,9 +1,18 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { HabitHeatMap } from '@/components/HabitHeatMap';
-import { borderRadius, colors, getHabitAccent, spacing, typography, withOpacity } from '@/constants/theme';
-import type { Habit } from '@/types/habit';
-import type { HabitLog } from '@/types/log';
-import { getRoutineProgress, isRoutineCompleted } from '@/utils/habitLogic';
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import {
+  borderRadius,
+  colors,
+  getHabitAccent,
+  spacing,
+  typography,
+  withOpacity,
+} from "@/constants/theme";
+import type { Habit } from "@/types/habit";
+import type { HabitLog } from "@/types/log";
+import { isRoutineCompleted } from "@/utils/habitLogic";
+
+import { HabitHeatMap } from "@/components/HabitHeatMap";
 
 interface RoutineHabitCardProps {
   habit: Habit;
@@ -13,10 +22,15 @@ interface RoutineHabitCardProps {
   onLongPress?: () => void;
 }
 
-export function RoutineHabitCard({ habit, log, logs, onPress, onLongPress }: RoutineHabitCardProps) {
+export function RoutineHabitCard({
+  habit,
+  log,
+  logs,
+  onPress,
+  onLongPress,
+}: RoutineHabitCardProps) {
   const completed = isRoutineCompleted(log);
-  const accent = getHabitAccent('routine');
-  const progress = getRoutineProgress(habit, log);
+  const accent = getHabitAccent("routine");
 
   return (
     <Pressable onPress={onPress} onLongPress={onLongPress}>
@@ -24,21 +38,38 @@ export function RoutineHabitCard({ habit, log, logs, onPress, onLongPress }: Rou
         style={[
           styles.card,
           completed
-            ? { backgroundColor: withOpacity(accent, 0.15), borderColor: accent }
+            ? {
+                backgroundColor: withOpacity(accent, 0.15),
+                borderColor: accent,
+              }
             : { borderColor: accent },
         ]}
       >
         <View style={styles.topRow}>
           <View style={styles.content}>
             <Text style={styles.name}>{habit.name}</Text>
-            <Text style={[styles.type, { color: accent }]}>ROUTINE</Text>
-            <Text style={styles.sub}>
-              {completed ? 'Done today' : `${progress.completed} / ${progress.total} steps`}
+            <Text style={styles.type}>
+              <Text style={{ color: accent }}>ROUTINE</Text>
+              <Text style={styles.sub}>
+                {" "}
+                • {`${habit.tasks?.length} steps`}
+              </Text>
             </Text>
           </View>
-          <View style={[styles.play, { borderColor: accent }]}>
-            <Text style={[styles.playIcon, { color: accent }]}>▶</Text>
-          </View>
+          {completed ? (
+            <View
+              style={[
+                styles.play,
+                { borderColor: accent, backgroundColor: accent },
+              ]}
+            >
+              <Text style={[styles.playIcon, styles.checkmark]}>✓</Text>
+            </View>
+          ) : (
+            <View style={[styles.play, { borderColor: accent }]}>
+              <Text style={[styles.playIcon, { color: accent }]}>▶</Text>
+            </View>
+          )}
         </View>
         <HabitHeatMap habit={habit} logs={logs} />
       </View>
@@ -55,9 +86,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: spacing.md,
     minHeight: 60,
   },
@@ -73,23 +104,26 @@ const styles = StyleSheet.create({
   type: {
     ...typography.caption,
     letterSpacing: 1.5,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   sub: {
-    ...typography.body,
     color: colors.textSecondary,
-    fontSize: 14,
   },
   play: {
     width: 44,
     height: 44,
     borderRadius: borderRadius.pill,
     borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   playIcon: {
     fontSize: 16,
     marginLeft: 2,
+  },
+  checkmark: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: colors.background,
   },
 });
