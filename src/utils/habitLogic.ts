@@ -1,6 +1,13 @@
 import type { Habit } from '@/types/habit';
 import type { HabitLog } from '@/types/log';
-import { todayString } from '@/utils/date';
+import { getPastDateStrings, todayString } from '@/utils/date';
+
+export interface HabitHeatMapCell {
+  date: string;
+  completion: number;
+  completed: boolean;
+  log?: HabitLog;
+}
 
 export function isCheckCompleted(log?: HabitLog): boolean {
   return log?.completed === true;
@@ -64,4 +71,38 @@ export function getTodayCompletionSummary(habits: Habit[], logs: HabitLog[], dat
     return isHabitCompleted(h, log);
   }).length;
   return { completed, total: habits.length };
+}
+
+export function getHabitHeatMapCells(
+  habit: Habit,
+  logs: HabitLog[],
+  days: number = 21,
+  endDate: string = todayString(),
+): HabitHeatMapCell[] {
+  return getPastDateStrings(days, new Date(`${endDate}T00:00:00`)).map((date) => {
+    const log = getLogForHabit(logs, habit.id, date);
+    const completion = (() => {
+      switch (habit.type) {
+        case 'check':
+          return isCheckCompleted(log) ? 1 : 0;
+        case 'count': {
+          const target = habit.target ?? 1;
+          return Math.min((log?.count ?? 0) / target, 1);
+        }
+        case 'routine': {
+          const total = habit.tasks?.length ?? 0;
+          if (log?.completed) return 1;
+          if (total === 0) return 0;
+          return Math.min((log?.completedTasks?.length ?? 0) / total, 1);
+        }
+      }
+    })();
+
+    return {
+      date,
+      completion,
+      completed: completion >= 1,
+      log,
+    };
+  });
 }
