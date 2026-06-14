@@ -8,11 +8,12 @@ import { isCheckCompleted } from '@/utils/habitLogic';
 interface CheckHabitCardProps {
   habit: Habit;
   log?: HabitLog;
+logs: HabitLog[];
   onToggle: () => void;
   onLongPress?: () => void;
 }
 
-export function CheckHabitCard({ habit, log, onToggle, onLongPress }: CheckHabitCardProps) {
+export function CheckHabitCard({ habit, log, logs, onToggle, onLongPress }: CheckHabitCardProps) {
   const completed = isCheckCompleted(log);
   const accent = getHabitAccent('check');
   const scale = useRef(new Animated.Value(1)).current;

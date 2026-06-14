@@ -7,6 +7,7 @@ import type { HabitLog } from '@/types/log';
 interface HabitCardProps {
   habit: Habit;
   log?: HabitLog;
+  logs: HabitLog[];
   onCheckToggle: (habitId: string, completed: boolean) => void;
   onCountIncrement: (habitId: string, target: number) => void;
   onRoutinePress: (habitId: string) => void;
@@ -16,6 +17,7 @@ interface HabitCardProps {
 export function HabitCard({
   habit,
   log,
+  logs,
   onCheckToggle,
   onCountIncrement,
   onRoutinePress,
@@ -29,6 +31,7 @@ export function HabitCard({
         <CheckHabitCard
           habit={habit}
           log={log}
+          logs={logs}
           onToggle={() => onCheckToggle(habit.id, !(log?.completed ?? false))}
           onLongPress={onLongPress}
         />
@@ -38,6 +41,7 @@ export function HabitCard({
         <CountHabitCard
           habit={habit}
           log={log}
+          logs={logs}
           onIncrement={() => onCountIncrement(habit.id, habit.target ?? 1)}
           onLongPress={onLongPress}
         />
@@ -47,6 +51,7 @@ export function HabitCard({
         <RoutineHabitCard
           habit={habit}
           log={log}
+          logs={logs}
           onPress={() => onRoutinePress(habit.id)}
           onLongPress={onLongPress}
         />

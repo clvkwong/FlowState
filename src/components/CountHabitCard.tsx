@@ -16,6 +16,7 @@ import { getCountProgress, isCountCompleted } from "@/utils/habitLogic";
 interface CountHabitCardProps {
   habit: Habit;
   log?: HabitLog;
+logs: HabitLog[];
   onIncrement: () => void;
   onLongPress?: () => void;
 }
@@ -23,6 +24,7 @@ interface CountHabitCardProps {
 export function CountHabitCard({
   habit,
   log,
+logs,
   onIncrement,
   onLongPress,
 }: CountHabitCardProps) {

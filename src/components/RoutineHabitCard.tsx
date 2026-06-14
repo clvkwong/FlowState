@@ -7,11 +7,12 @@ import { getRoutineProgress, isRoutineCompleted } from '@/utils/habitLogic';
 interface RoutineHabitCardProps {
   habit: Habit;
   log?: HabitLog;
+logs: HabitLog[];
   onPress: () => void;
   onLongPress?: () => void;
 }
 
-export function RoutineHabitCard({ habit, log, onPress, onLongPress }: RoutineHabitCardProps) {
+export function RoutineHabitCard({ habit, log, logs, onPress, onLongPress }: RoutineHabitCardProps) {
   const completed = isRoutineCompleted(log);
   const accent = getHabitAccent('routine');
   const progress = getRoutineProgress(habit, log);

@@ -95,6 +95,7 @@ export default function HomeScreen() {
           renderItem={({ item }) => (
             <HabitCard
               habit={item}
+              logs={logs}
               log={getLogForHabit(logs, item.id, today)}
               onCheckToggle={handleCheckToggle}
               onCountIncrement={handleCountIncrement}
