@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { borderRadius, colors, getHabitAccent, spacing, typography, withOpacity } from '@/constants/theme';
+import { HabitHeatMap } from '@/components/HabitHeatMap';
 import type { Habit } from '@/types/habit';
 import type { HabitLog } from '@/types/log';
 import { isCheckCompleted } from '@/utils/habitLogic';
@@ -8,7 +9,7 @@ import { isCheckCompleted } from '@/utils/habitLogic';
 interface CheckHabitCardProps {
   habit: Habit;
   log?: HabitLog;
-logs: HabitLog[];
+  logs: HabitLog[];
   onToggle: () => void;
   onLongPress?: () => void;
 }
@@ -37,13 +38,16 @@ export function CheckHabitCard({ habit, log, logs, onToggle, onLongPress }: Chec
           { transform: [{ scale }] },
         ]}
       >
-        <View style={styles.content}>
-          <Text style={styles.name}>{habit.name}</Text>
-          <Text style={[styles.type, { color: accent }]}>CHECK</Text>
+        <View style={styles.topRow}>
+          <View style={styles.content}>
+            <Text style={styles.name}>{habit.name}</Text>
+            <Text style={[styles.type, { color: accent }]}>CHECK</Text>
+          </View>
+          <View style={[styles.check, completed && { backgroundColor: accent }]}>
+            {completed ? <Text style={styles.checkmark}>✓</Text> : null}
+          </View>
         </View>
-        <View style={[styles.check, completed && { backgroundColor: accent }]}>
-          {completed ? <Text style={styles.checkmark}>✓</Text> : null}
-        </View>
+        <HabitHeatMap habit={habit} logs={logs} />
       </Animated.View>
     </Pressable>
   );
@@ -55,10 +59,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: 2,
     padding: spacing.md,
+    gap: spacing.md,
+  },
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 88,
+    gap: spacing.md,
+    minHeight: 60,
   },
   content: {
     flex: 1,

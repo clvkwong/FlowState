@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { ProgressRing } from "@/components/ProgressRing";
+import { HabitHeatMap } from "@/components/HabitHeatMap";
 import {
   borderRadius,
   colors,
@@ -16,7 +17,7 @@ import { getCountProgress, isCountCompleted } from "@/utils/habitLogic";
 interface CountHabitCardProps {
   habit: Habit;
   log?: HabitLog;
-logs: HabitLog[];
+  logs: HabitLog[];
   onIncrement: () => void;
   onLongPress?: () => void;
 }
@@ -24,7 +25,7 @@ logs: HabitLog[];
 export function CountHabitCard({
   habit,
   log,
-logs,
+  logs,
   onIncrement,
   onLongPress,
 }: CountHabitCardProps) {
@@ -59,23 +60,26 @@ logs,
                 backgroundColor: withOpacity(accent, 0.15),
                 borderColor: accent,
               }
-            : { borderColor: accent },
+          : { borderColor: accent },
           { transform: [{ scale }] },
         ]}
       >
-        <View style={styles.content}>
-          <Text style={styles.name}>{habit.name}</Text>
-          <Text style={[styles.type, { color: accent }]}>COUNT</Text>
-          <Text style={styles.sub}>
-            {progress.current} / {progress.target}
-          </Text>
+        <View style={styles.topRow}>
+          <View style={styles.content}>
+            <Text style={styles.name}>{habit.name}</Text>
+            <Text style={[styles.type, { color: accent }]}>COUNT</Text>
+            <Text style={styles.sub}>
+              {progress.current} / {progress.target}
+            </Text>
+          </View>
+          <ProgressRing
+            ratio={progress.ratio}
+            current={progress.current}
+            target={progress.target}
+            accent={accent}
+          />
         </View>
-        <ProgressRing
-          ratio={progress.ratio}
-          current={progress.current}
-          target={progress.target}
-          accent={accent}
-        />
+        <HabitHeatMap habit={habit} logs={logs} />
       </Animated.View>
     </Pressable>
   );
@@ -87,10 +91,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: 2,
     padding: spacing.md,
+    gap: spacing.md,
+  },
+  topRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: 88,
+    gap: spacing.md,
+    minHeight: 60,
   },
   content: {
     flex: 1,
