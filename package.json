@@ -3,6 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@react-native-vector-icons/ionicons": "^13.1.2",
     "expo": "~56.0.9",
     "expo-constants": "~56.0.17",
     "expo-font": "~56.0.5",
