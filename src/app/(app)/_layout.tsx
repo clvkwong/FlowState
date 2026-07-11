@@ -11,11 +11,15 @@ export default function AppLayout() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="habit/new" options={{ title: 'New Habit', presentation: 'modal' }} />
       <Stack.Screen name="habit/[id]/edit" options={{ title: 'Edit Habit' }} />
       <Stack.Screen
         name="routine/[habitId]"
+        options={{ title: '', headerShown: false, presentation: 'fullScreenModal' }}
+      />
+      <Stack.Screen
+        name="focus/[sessionId]"
         options={{ title: '', headerShown: false, presentation: 'fullScreenModal' }}
       />
     </Stack>

@@ -17,7 +17,7 @@ import { HabitCard } from "@/components/HabitCard";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const pathSegments = useSegments();
+  const pathSegments = useSegments() as string[];
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const habits = useHabitStore((s) => s.habits);
@@ -45,14 +45,20 @@ export default function HomeScreen() {
     (habitId: string) => {
       startRoutineSession(habitId);
     },
-    [startRoutineSession, router],
+    [startRoutineSession],
   );
 
   useEffect(() => {
-    if (pathSegments[1] !== "routine" && activeRoutineSession?.habitId) {
+    const onRoutineScreen = pathSegments[1] === "routine";
+    const onFocusTimerScreen = pathSegments[1] === "focus";
+    if (
+      !onRoutineScreen &&
+      !onFocusTimerScreen &&
+      activeRoutineSession?.habitId
+    ) {
       router.push(`/(app)/routine/${activeRoutineSession.habitId}`);
     }
-  }, [pathSegments, activeRoutineSession]);
+  }, [pathSegments, activeRoutineSession, router]);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -189,7 +195,7 @@ const styles = StyleSheet.create({
   fab: {
     position: "absolute",
     right: spacing.lg,
-    bottom: spacing.lg,
+    bottom: 110, // Adjusted to move above the new tab bar
     width: 60,
     height: 60,
     borderRadius: borderRadius.pill,
