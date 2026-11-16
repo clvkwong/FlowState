@@ -13,6 +13,7 @@ export default function AppLayout() {
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="habit/new" options={{ title: 'New Habit', presentation: 'modal' }} />
+      <Stack.Screen name="habit/[id]/index" options={{ headerShown: false }} />
       <Stack.Screen name="habit/[id]/edit" options={{ title: 'Edit Habit' }} />
       <Stack.Screen
         name="routine/[habitId]"

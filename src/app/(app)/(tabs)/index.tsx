@@ -106,7 +106,7 @@ export default function HomeScreen() {
               onCheckToggle={handleCheckToggle}
               onCountIncrement={handleCountIncrement}
               onRoutinePress={handleRoutinePress}
-              onEdit={(id) => router.push(`/(app)/habit/${id}/edit`)}
+              onViewDetails={(id) => router.push(`/(app)/habit/${id}`)}
             />
           )}
         />

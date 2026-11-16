@@ -11,7 +11,7 @@ interface HabitCardProps {
   onCheckToggle: (habitId: string, completed: boolean) => void;
   onCountIncrement: (habitId: string, target: number) => void;
   onRoutinePress: (habitId: string) => void;
-  onEdit: (habitId: string) => void;
+  onViewDetails: (habitId: string) => void;
 }
 
 export function HabitCard({
@@ -21,9 +21,9 @@ export function HabitCard({
   onCheckToggle,
   onCountIncrement,
   onRoutinePress,
-  onEdit,
+  onViewDetails,
 }: HabitCardProps) {
-  const onLongPress = () => onEdit(habit.id);
+  const onLongPress = () => onViewDetails(habit.id);
 
   switch (habit.type) {
     case 'check':

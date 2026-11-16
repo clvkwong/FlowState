@@ -43,3 +43,41 @@ export function formatDuration(seconds: number): string {
   const secs = absoluteSeconds % 60;
   return `${isNegative ? "-" : ""}${mins}:${String(secs).padStart(2, "0")}`;
 }
+
+export function formatRelativeDay(
+  dateStr: string,
+  today: string = todayString(),
+): string | null {
+  if (dateStr === today) return "Today";
+  if (dateStr === formatDateString(addDays(parseDateString(today), -1))) {
+    return "Yesterday";
+  }
+  return null;
+}
+
+export function formatShortDate(dateStr: string): string {
+  return parseDateString(dateStr).toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+export function formatLongDate(isoString: string): string {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export function formatTime(isoString: string): string {
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
