@@ -1,8 +1,9 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { AppTextInput } from '@/components/AppTextInput';
 import { Button } from '@/components/Button';
+import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { colors, spacing, typography } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -35,58 +36,48 @@ export default function SignUpScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={styles.inner}>
-        <Text style={styles.logo}>Join FlowState</Text>
-        <Text style={styles.subtitle}>Start building habits today.</Text>
+    <KeyboardAwareScreen contentContainerStyle={styles.inner}>
+      <Text style={styles.logo}>Join FlowState</Text>
+      <Text style={styles.subtitle}>Start building habits today.</Text>
 
-        <View style={styles.form}>
-          <AppTextInput
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            placeholder="you@example.com"
-          />
-          <AppTextInput
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholder="••••••••"
-          />
-          <AppTextInput
-            label="Confirm password"
-            value={confirm}
-            onChangeText={setConfirm}
-            secureTextEntry
-            placeholder="••••••••"
-          />
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Button title="Create Account" onPress={handleSignUp} loading={loading} />
-        </View>
-
-        <Link href="/(auth)/sign-in" style={styles.link}>
-          <Text style={styles.linkText}>
-            Already have an account? <Text style={styles.linkAccent}>Sign in</Text>
-          </Text>
-        </Link>
+      <View style={styles.form}>
+        <AppTextInput
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          placeholder="you@example.com"
+        />
+        <AppTextInput
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          placeholder="••••••••"
+        />
+        <AppTextInput
+          label="Confirm password"
+          value={confirm}
+          onChangeText={setConfirm}
+          secureTextEntry
+          placeholder="••••••••"
+        />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Button title="Create Account" onPress={handleSignUp} loading={loading} />
       </View>
-    </KeyboardAvoidingView>
+
+      <Link href="/(auth)/sign-in" style={styles.link}>
+        <Text style={styles.linkText}>
+          Already have an account? <Text style={styles.linkAccent}>Sign in</Text>
+        </Text>
+      </Link>
+    </KeyboardAwareScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   inner: {
-    flex: 1,
     justifyContent: 'center',
     padding: spacing.lg,
     gap: spacing.lg,

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AppTextInput } from "@/components/AppTextInput";
 import { Button } from "@/components/Button";
+import { KeyboardAwareScreen } from "@/components/KeyboardAwareScreen";
 import {
   borderRadius,
   colors,
@@ -98,10 +99,7 @@ export function HabitForm({
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
+    <KeyboardAwareScreen contentContainerStyle={styles.container}>
       <AppTextInput
         label="Habit name"
         value={name}
@@ -221,7 +219,7 @@ export function HabitForm({
           loading={deleting}
         />
       ) : null}
-    </ScrollView>
+    </KeyboardAwareScreen>
   );
 }
 
