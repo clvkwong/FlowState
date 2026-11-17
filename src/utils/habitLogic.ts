@@ -116,3 +116,24 @@ export function getHabitHeatMapCells(
     },
   );
 }
+
+export function getRoutinePlannedDuration(habit: Habit): number {
+  return habit.tasks?.reduce((sum, t) => sum + t.durationSeconds, 0) ?? 0;
+}
+
+function hasLoggedActivity(habit: Habit, log: HabitLog): boolean {
+  switch (habit.type) {
+    case "check":
+    case "routine":
+      return log.completed === true;
+    case "count":
+      return (log.count ?? 0) > 0;
+  }
+}
+
+/** Past sessions for a habit, newest first. Days with no activity are skipped. */
+export function getHabitHistory(habit: Habit, logs: HabitLog[]): HabitLog[] {
+  return logs
+    .filter((l) => l.habitId === habit.id && hasLoggedActivity(habit, l))
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
