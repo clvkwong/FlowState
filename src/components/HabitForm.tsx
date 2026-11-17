@@ -23,6 +23,11 @@ interface HabitFormProps {
   lockType?: boolean;
   onSubmit: (input: CreateHabitInput) => Promise<void>;
   onDelete?: () => Promise<void>;
+  /**
+   * When set, routine steps are managed on their own screen: the form shows a
+   * link to it instead of the inline step editor and never submits `tasks`.
+   */
+  onManageSteps?: () => void;
   submitLabel?: string;
 }
 
@@ -31,8 +36,10 @@ export function HabitForm({
   lockType = false,
   onSubmit,
   onDelete,
+  onManageSteps,
   submitLabel = "Save Habit",
 }: HabitFormProps) {
+  const managesStepsElsewhere = Boolean(onManageSteps);
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(
     initial?.description ?? "",
@@ -61,7 +68,7 @@ export function HabitForm({
       setError("Target must be at least 1");
       return;
     }
-    if (type === "routine") {
+    if (type === "routine" && !managesStepsElsewhere) {
       const validTasks = tasks.filter((t) => t.label.trim());
       if (validTasks.length === 0) {
         setError("Add at least one routine step");
@@ -77,7 +84,7 @@ export function HabitForm({
         type,
       };
       if (type === "count") input.target = Number(target);
-      if (type === "routine") {
+      if (type === "routine" && !managesStepsElsewhere) {
         input.tasks = tasks
           .filter((t) => t.label.trim())
           .map((t) => ({
@@ -164,7 +171,29 @@ export function HabitForm({
         />
       ) : null}
 
-      {type === "routine" ? (
+      {type === "routine" && onManageSteps ? (
+        <View style={styles.tasks}>
+          <Text style={styles.sectionLabel}>Steps</Text>
+          <Pressable
+            onPress={onManageSteps}
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              styles.manageSteps,
+              pressed && styles.manageStepsPressed,
+            ]}
+          >
+            <View style={styles.manageStepsText}>
+              <Text style={styles.manageStepsTitle}>Manage steps</Text>
+              <Text style={styles.manageStepsMeta}>
+                {(initial?.tasks ?? []).length} steps · add, edit, reorder
+              </Text>
+            </View>
+            <Text style={styles.manageStepsChevron}>›</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {type === "routine" && !onManageSteps ? (
         <View style={styles.tasks}>
           <Text style={styles.sectionLabel}>Steps</Text>
           {tasks.map((task, index) => (
@@ -305,6 +334,38 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: 18,
     fontWeight: "700",
+  },
+  manageSteps: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 2,
+    borderColor: colors.routine,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    gap: spacing.md,
+  },
+  manageStepsPressed: {
+    opacity: 0.8,
+  },
+  manageStepsText: {
+    flex: 1,
+    gap: 2,
+  },
+  manageStepsTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: colors.textPrimary,
+  },
+  manageStepsMeta: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  manageStepsChevron: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: colors.routine,
   },
   error: {
     ...typography.caption,

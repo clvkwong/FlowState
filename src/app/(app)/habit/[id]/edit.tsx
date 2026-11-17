@@ -5,7 +5,7 @@ import { colors, spacing } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { useHabitStore } from '@/stores/habitStore';
 import { useLogStore } from '@/stores/logStore';
-import type { CreateHabitInput } from '@/types/habit';
+import type { CreateHabitInput, UpdateHabitInput } from '@/types/habit';
 
 export default function EditHabitScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,12 +25,15 @@ export default function EditHabitScreen() {
   }
 
   const handleSubmit = async (input: CreateHabitInput) => {
-    await updateHabit(habit.id, {
+    // Steps are edited on their own screen; only send fields the form owns so
+    // updateHabitLocal never overwrites them with undefined. An empty
+    // description is sent as '' so the service clears it.
+    const updates: UpdateHabitInput = {
       name: input.name,
       description: input.description ?? '',
-      target: input.target,
-      tasks: input.tasks,
-    });
+    };
+    if (input.target !== undefined) updates.target = input.target;
+    await updateHabit(habit.id, updates);
     router.back();
   };
 
@@ -47,6 +50,11 @@ export default function EditHabitScreen() {
       lockType
       onSubmit={handleSubmit}
       onDelete={handleDelete}
+      onManageSteps={
+        habit.type === 'routine'
+          ? () => router.push(`/(app)/habit/${habit.id}/steps`)
+          : undefined
+      }
       submitLabel="Save Changes"
     />
   );

@@ -211,6 +211,7 @@ function HabitDetails({
   accent,
   onAccent,
 }: HabitDetailsProps) {
+  const router = useRouter();
   switch (habit.type) {
     case "check": {
       const done = isHabitCompleted(habit, todayLog);
@@ -288,15 +289,28 @@ function HabitDetails({
                     {index + 1}
                   </Text>
                 </View>
-                <Text style={styles.stepLabel} numberOfLines={1}>
-                  {task.label}
-                </Text>
+                <View style={styles.stepText}>
+                  <Text style={styles.stepLabel} numberOfLines={1}>
+                    {task.label}
+                  </Text>
+                  {task.description ? (
+                    <Text style={styles.stepDescription} numberOfLines={2}>
+                      {task.description}
+                    </Text>
+                  ) : null}
+                </View>
                 <Text style={styles.stepDuration}>
                   {formatDuration(task.durationSeconds)}
                 </Text>
               </View>
             ))}
           </View>
+          <Button
+            title={tasks.length > 0 ? "Manage steps" : "Add steps"}
+            variant="ghost"
+            onPress={() => router.push(`/(app)/habit/${habit.id}/steps`)}
+            style={styles.manageSteps}
+          />
         </View>
       );
     }
@@ -441,7 +455,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    height: 56,
+    minHeight: 56,
+    paddingVertical: 10,
+  },
+  stepText: {
+    flex: 1,
+    gap: 2,
+  },
+  stepDescription: {
+    ...typography.caption,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  manageSteps: {
+    marginTop: spacing.sm,
   },
   stepDivider: {
     borderTopWidth: 1,
@@ -462,7 +489,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontWeight: "600",
     color: colors.textPrimary,
-    flex: 1,
   },
   stepDuration: {
     fontSize: 15,
