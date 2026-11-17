@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { colors } from '@/constants/theme';
 import { useStoreHydration } from '@/hooks/useStoreHydration';
 import * as authService from '@/services/authService';
@@ -52,13 +53,13 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <KeyboardProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(app)" />
       </Stack>
-    </>
+    </KeyboardProvider>
   );
 }
 
