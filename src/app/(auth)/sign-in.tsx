@@ -7,6 +7,9 @@ import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { colors, spacing, typography } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
 
+// Gap + height of the submit button under the last field, kept above the keyboard.
+const SUBMIT_BUTTON_SPACE = spacing.md + 52;
+
 export default function SignInScreen() {
   const signIn = useAuthStore((s) => s.signIn);
   const [email, setEmail] = useState('');
@@ -27,7 +30,10 @@ export default function SignInScreen() {
   };
 
   return (
-    <KeyboardAwareScreen contentContainerStyle={styles.inner}>
+    <KeyboardAwareScreen
+      contentContainerStyle={styles.inner}
+      keepVisibleBelow={SUBMIT_BUTTON_SPACE}
+    >
       <Text style={styles.logo}>FlowState</Text>
       <Text style={styles.subtitle}>Build habits. Feel the flow.</Text>
 
