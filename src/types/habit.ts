@@ -3,6 +3,7 @@ export type HabitType = 'check' | 'count' | 'routine';
 export interface RoutineTask {
   id: string;
   label: string;
+  description?: string;
   durationSeconds: number;
 }
 
