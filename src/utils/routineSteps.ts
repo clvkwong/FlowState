@@ -1,4 +1,5 @@
 import type { RoutineTask } from "@/types/habit";
+import { formatDuration } from "@/utils/date";
 
 export const MIN_STEP_DURATION_SECONDS = 1;
 export const MAX_STEP_DURATION_SECONDS = 59 * 60 + 59;
@@ -136,4 +137,32 @@ export function areStepsEqual(a: RoutineTask[], b: RoutineTask[]): boolean {
       (step.description ?? "") === (other.description ?? "")
     );
   });
+}
+
+export interface StepTimerState {
+  /** Share of the planned time still left, 0–1. 0 once overtime. */
+  remainingRatio: number;
+  /** Share of the planned time used, 0–1. 1 once overtime. */
+  elapsedRatio: number;
+  isOvertime: boolean;
+  /** "4:12" while counting down, "+0:24" once over the planned time. */
+  display: string;
+}
+
+/** Display state for the active step's timer, from its countdown in seconds. */
+export function getStepTimerState(
+  countdownSeconds: number,
+  plannedSeconds: number,
+): StepTimerState {
+  const planned = Math.max(plannedSeconds, 1);
+  const isOvertime = countdownSeconds < 0;
+  const remainingRatio = Math.min(Math.max(countdownSeconds / planned, 0), 1);
+  return {
+    remainingRatio,
+    elapsedRatio: 1 - remainingRatio,
+    isOvertime,
+    display: isOvertime
+      ? `+${formatDuration(-countdownSeconds)}`
+      : formatDuration(countdownSeconds),
+  };
 }
