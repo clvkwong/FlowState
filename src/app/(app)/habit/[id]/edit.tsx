@@ -27,6 +27,7 @@ export default function EditHabitScreen() {
   const handleSubmit = async (input: CreateHabitInput) => {
     await updateHabit(habit.id, {
       name: input.name,
+      description: input.description ?? '',
       target: input.target,
       tasks: input.tasks,
     });

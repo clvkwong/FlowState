@@ -60,6 +60,7 @@ utils/ # Habit logic, date helpers
   id: string
   userId: string
   name: string
+  description?: string     // optional, free text
   type: 'check' | 'count' | 'routine'
   target?: number           // count habits only
   tasks?: RoutineTask[]     // routine habits only

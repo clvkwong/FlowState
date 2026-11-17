@@ -34,6 +34,9 @@ export function HabitForm({
   submitLabel = "Save Habit",
 }: HabitFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
+  const [description, setDescription] = useState(
+    initial?.description ?? "",
+  );
   const [type, setType] = useState<HabitType>(initial?.type ?? "check");
   const [target, setTarget] = useState(String(initial?.target ?? 8));
   const [tasks, setTasks] = useState<RoutineTask[]>(
@@ -68,7 +71,11 @@ export function HabitForm({
 
     setLoading(true);
     try {
-      const input: CreateHabitInput = { name: name.trim(), type };
+      const input: CreateHabitInput = {
+        name: name.trim(),
+        description: description.trim(),
+        type,
+      };
       if (type === "count") input.target = Number(target);
       if (type === "routine") {
         input.tasks = tasks
@@ -105,6 +112,17 @@ export function HabitForm({
         value={name}
         onChangeText={setName}
         placeholder="e.g. Drink water"
+      />
+
+      <AppTextInput
+        label="Description (optional)"
+        value={description}
+        onChangeText={setDescription}
+        placeholder="Why does this habit matter to you?"
+        multiline
+        maxLength={280}
+        textAlignVertical="top"
+        style={styles.descriptionInput}
       />
 
       <Text style={styles.sectionLabel}>Type</Text>
@@ -228,6 +246,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
     paddingBottom: spacing.xl * 2,
+  },
+  descriptionInput: {
+    minHeight: 96,
+    paddingTop: 14,
   },
   sectionLabel: {
     ...typography.label,

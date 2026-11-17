@@ -10,6 +10,7 @@ export interface Habit {
   id: string;
   userId: string;
   name: string;
+  description?: string;
   type: HabitType;
   target?: number;
   tasks?: RoutineTask[];
@@ -18,6 +19,7 @@ export interface Habit {
 
 export interface CreateHabitInput {
   name: string;
+  description?: string;
   type: HabitType;
   target?: number;
   tasks?: RoutineTask[];
@@ -25,6 +27,7 @@ export interface CreateHabitInput {
 
 export interface UpdateHabitInput {
   name?: string;
+  description?: string;
   target?: number;
   tasks?: RoutineTask[];
 }
