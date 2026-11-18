@@ -78,22 +78,22 @@ export function FloatingTabBar({
           return (
             <Pressable
               key={route.key}
-            onPress={onPress}
-            onLongPress={onLongPress}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: focused }}
-            accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
-            style={({ pressed }) => [
-              styles.tab,
-              focused && styles.tabActive,
-              pressed && styles.pressed,
-            ]}
-          >
-            {options.tabBarIcon?.({ focused, color: tint, size: ICON_SIZE })}
-            <Text style={[styles.label, { color: tint }]}>{label}</Text>
-          </Pressable>
-        );
-      })}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: focused }}
+              accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
+              style={({ pressed }) => [
+                styles.tab,
+                focused && styles.tabActive,
+                pressed && styles.pressed,
+              ]}
+            >
+              {options.tabBarIcon?.({ focused, color: tint, size: ICON_SIZE })}
+              <Text style={[styles.label, { color: tint }]}>{label}</Text>
+            </Pressable>
+          );
+        })}
       </View>
     </>
   );
