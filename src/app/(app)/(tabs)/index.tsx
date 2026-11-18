@@ -15,7 +15,14 @@ import { getLogForHabit, getTodayCompletionSummary } from "@/utils/habitLogic";
 
 import { AccountSheet } from "@/components/AccountSheet";
 import { CompletionSummary } from "@/components/CompletionSummary";
+import { HabitActionSheet } from "@/components/HabitActionSheet";
 import { HabitCard } from "@/components/HabitCard";
+import { useDeleteHabit } from "@/hooks/useDeleteHabit";
+import type { Habit } from "@/types/habit";
+
+// Let the sheet's dismiss animation finish before navigating or showing an
+// Alert; iOS drops Alerts presented while a Modal is still closing.
+const SHEET_DISMISS_MS = 250;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -32,6 +39,9 @@ export default function HomeScreen() {
   const startRoutineSession = useRoutineSessionStore((s) => s.startSession);
 
   const [accountOpen, setAccountOpen] = useState(false);
+  const [actionHabitId, setActionHabitId] = useState<string | null>(null);
+  const actionHabit = habits.find((h) => h.id === actionHabitId) ?? null;
+  const { confirmDelete } = useDeleteHabit();
 
   const today = todayString();
   const summary = getTodayCompletionSummary(habits, logs, today);
@@ -64,6 +74,17 @@ export default function HomeScreen() {
   };
 
   const openNewHabit = () => router.push("/(app)/habit/new");
+
+  const afterSheetCloses = (fn: () => void) => {
+    setActionHabitId(null);
+    setTimeout(fn, SHEET_DISMISS_MS);
+  };
+  const handleEdit = (habit: Habit) =>
+    afterSheetCloses(() => router.push(`/(app)/habit/${habit.id}/edit`));
+  const handleView = (habit: Habit) =>
+    afterSheetCloses(() => router.push(`/(app)/habit/${habit.id}`));
+  const handleDelete = (habit: Habit) =>
+    afterSheetCloses(() => confirmDelete(habit));
 
   useEffect(() => {
     const onRoutineScreen = pathSegments[1] === "routine";
@@ -159,11 +180,19 @@ export default function HomeScreen() {
               onCountIncrement={handleCountIncrement}
               onCountDecrement={handleCountDecrement}
               onRoutinePress={handleRoutinePress}
-              onViewDetails={(id) => router.push(`/(app)/habit/${id}`)}
+              onLongPress={setActionHabitId}
             />
           )}
         />
       )}
+
+      <HabitActionSheet
+        habit={actionHabit}
+        onClose={() => setActionHabitId(null)}
+        onEdit={handleEdit}
+        onView={handleView}
+        onDelete={handleDelete}
+      />
 
       <AccountSheet
         visible={accountOpen}

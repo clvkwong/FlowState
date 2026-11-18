@@ -77,7 +77,16 @@ export function BottomSheet({
   );
 }
 
-type SheetActionVariant = "primary" | "secondary" | "danger" | "ghost";
+/**
+ * primary: filled CTA · secondary: outlined · danger: outlined red ·
+ * dangerText: red label, no outline · ghost: plain label (e.g. Cancel)
+ */
+type SheetActionVariant =
+  | "primary"
+  | "secondary"
+  | "danger"
+  | "dangerText"
+  | "ghost";
 
 interface SheetActionProps {
   label: string;
@@ -95,7 +104,10 @@ export function SheetAction({
   onPress,
   disabled,
 }: SheetActionProps) {
-  const tint = variant === "danger" ? colors.danger : colors.textPrimary;
+  const tint =
+    variant === "danger" || variant === "dangerText"
+      ? colors.danger
+      : colors.textPrimary;
 
   return (
     <Pressable

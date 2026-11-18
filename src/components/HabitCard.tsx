@@ -12,7 +12,8 @@ interface HabitCardProps {
   onCountIncrement: (habitId: string, target: number) => void;
   onCountDecrement: (habitId: string, target: number) => void;
   onRoutinePress: (habitId: string) => void;
-  onViewDetails: (habitId: string) => void;
+  /** Opens the habit's action menu (edit / view / delete). */
+  onLongPress: (habitId: string) => void;
 }
 
 export function HabitCard({
@@ -23,9 +24,9 @@ export function HabitCard({
   onCountIncrement,
   onCountDecrement,
   onRoutinePress,
-  onViewDetails,
+  onLongPress: onHabitLongPress,
 }: HabitCardProps) {
-  const onLongPress = () => onViewDetails(habit.id);
+  const onLongPress = () => onHabitLongPress(habit.id);
 
   switch (habit.type) {
     case 'check':
