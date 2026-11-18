@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -19,7 +18,6 @@ import {
   spacing,
   typography,
 } from "@/constants/theme";
-import { useAuthStore } from "@/stores/authStore";
 import { useHabitStore } from "@/stores/habitStore";
 import { useLogStore } from "@/stores/logStore";
 import type { Habit } from "@/types/habit";
@@ -35,6 +33,7 @@ import {
 
 import { Button } from "@/components/Button";
 import { HabitHistoryCard } from "@/components/HabitHistoryCard";
+import { useDeleteHabit } from "@/hooks/useDeleteHabit";
 import { ProgressRing } from "@/components/ProgressRing";
 
 const HISTORY_NOUN: Record<Habit["type"], [string, string]> = {
@@ -46,15 +45,9 @@ const HISTORY_NOUN: Record<Habit["type"], [string, string]> = {
 export default function HabitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const user = useAuthStore((s) => s.user);
   const habit = useHabitStore((s) => s.habits.find((h) => h.id === id));
-  const deleteHabit = useHabitStore((s) => s.deleteHabit);
   const logs = useLogStore((s) => s.logs);
-  const deleteLogsForHabitRemote = useLogStore(
-    (s) => s.deleteLogsForHabitRemote,
-  );
-
-  const [deleting, setDeleting] = useState(false);
+  const { confirmDelete: confirmDeleteHabit, deletingId } = useDeleteHabit();
 
   const today = todayString();
   const history = useMemo(
@@ -77,32 +70,9 @@ export default function HabitDetailScreen() {
   const createdDate = formatLongDate(habit.createdAt);
   const [singular, plural] = HISTORY_NOUN[habit.type];
 
-  const handleDelete = async () => {
-    if (!user) return;
-    setDeleting(true);
-    try {
-      await deleteHabit(user.uid, habit.id);
-      await deleteLogsForHabitRemote(user.uid, habit.id);
-      router.replace("/(app)");
-    } catch (e) {
-      setDeleting(false);
-      Alert.alert(
-        "Delete failed",
-        e instanceof Error ? e.message : "Something went wrong",
-      );
-    }
-  };
-
-  const confirmDelete = () => {
-    Alert.alert(
-      `Delete "${habit.name}"?`,
-      "This removes the habit and all of its history. This can't be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: handleDelete },
-      ],
-    );
-  };
+  const deleting = deletingId === habit.id;
+  const confirmDelete = () =>
+    confirmDeleteHabit(habit, () => router.replace("/(app)"));
 
   const header = (
     <View>

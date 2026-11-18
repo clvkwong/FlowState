@@ -38,6 +38,20 @@ export function getCountProgress(habit: Habit, log?: HabitLog) {
   return { current, target, ratio: Math.min(current / target, 1) };
 }
 
+/**
+ * Next count + completion flag after a +1 / -1 step on a count habit.
+ * Never goes below 0; `completed` is re-derived so undoing below the
+ * target clears the done state.
+ */
+export function stepCount(
+  current: number,
+  delta: 1 | -1,
+  target: number,
+): { count: number; completed: boolean } {
+  const count = Math.max(0, current + delta);
+  return { count, completed: count >= target };
+}
+
 export function getTaskActualDuration(
   log: HabitLog | undefined,
   taskId: string,
@@ -68,17 +82,25 @@ export function getTodayLogs(
   return logs.filter((l) => l.date === date);
 }
 
+export interface CompletionSegment {
+  habitId: string;
+  type: Habit["type"];
+  completed: boolean;
+}
+
 export function getTodayCompletionSummary(
   habits: Habit[],
   logs: HabitLog[],
   date: string = todayString(),
 ) {
   const todayLogs = getTodayLogs(logs, date);
-  const completed = habits.filter((h) => {
-    const log = getLogForHabit(todayLogs, h.id, date);
-    return isHabitCompleted(h, log);
-  }).length;
-  return { completed, total: habits.length };
+  const segments: CompletionSegment[] = habits.map((h) => ({
+    habitId: h.id,
+    type: h.type,
+    completed: isHabitCompleted(h, getLogForHabit(todayLogs, h.id, date)),
+  }));
+  const completed = segments.filter((s) => s.completed).length;
+  return { completed, total: habits.length, segments };
 }
 
 export function getHabitHeatMapCells(

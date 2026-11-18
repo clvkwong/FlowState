@@ -10,8 +10,10 @@ interface HabitCardProps {
   logs: HabitLog[];
   onCheckToggle: (habitId: string, completed: boolean) => void;
   onCountIncrement: (habitId: string, target: number) => void;
+  onCountDecrement: (habitId: string, target: number) => void;
   onRoutinePress: (habitId: string) => void;
-  onViewDetails: (habitId: string) => void;
+  /** Opens the habit's action menu (edit / view / delete). */
+  onLongPress: (habitId: string) => void;
 }
 
 export function HabitCard({
@@ -20,10 +22,11 @@ export function HabitCard({
   logs,
   onCheckToggle,
   onCountIncrement,
+  onCountDecrement,
   onRoutinePress,
-  onViewDetails,
+  onLongPress: onHabitLongPress,
 }: HabitCardProps) {
-  const onLongPress = () => onViewDetails(habit.id);
+  const onLongPress = () => onHabitLongPress(habit.id);
 
   switch (habit.type) {
     case 'check':
@@ -43,6 +46,7 @@ export function HabitCard({
           log={log}
           logs={logs}
           onIncrement={() => onCountIncrement(habit.id, habit.target ?? 1)}
+          onDecrement={() => onCountDecrement(habit.id, habit.target ?? 1)}
           onLongPress={onLongPress}
         />
       );
