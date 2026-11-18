@@ -153,6 +153,7 @@ Bold, high-energy, gamified. Inspired by Streaks and Duolingo — reward complet
   - Edit / View / Delete live behind gestures, not buttons on the card: long-press opens an action sheet, swipe left reveals the same three actions.
 - Progress bar for count habits (fill animates, value shown at its end).
 - Account button in the home header opens a sheet with the signed-in email and Sign out.
+- Bottom tabs: floating Surface pill (`FloatingTabBar`); each tab is icon + label, the active one sits in a tinted primary pill.
 - Step-through timer view for routine habits — fullscreen, one task at a time.
 - Streak/completion counter on the home screen — make it prominent.
 

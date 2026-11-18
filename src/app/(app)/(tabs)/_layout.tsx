@@ -1,31 +1,13 @@
 import { Tabs } from "expo-router";
-import { colors } from "@/constants/theme";
 import Ionicons from "@react-native-vector-icons/ionicons";
+
+import { FloatingTabBar } from "@/components/FloatingTabBar";
 
 export default function TabsLayout() {
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopWidth: 0,
-          elevation: 10,
-          height: 64,
-          marginHorizontal: 36,
-          marginBottom: 32,
-          borderRadius: 32,
-          position: "absolute",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 12,
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: { fontWeight: "700", fontSize: 11 },
-        tabBarIconStyle: { marginTop: 5 },
-      }}
+      tabBar={(props) => <FloatingTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
       <Tabs.Screen
         name="index"
