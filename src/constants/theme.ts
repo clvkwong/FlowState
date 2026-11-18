@@ -13,6 +13,10 @@ export const colors = {
   // Lighter tint of routine purple for small text on Surface (#6C47FF itself
   // is too low-contrast for 12px labels).
   routineLabel: '#A48BFF',
+  // Raised surface for floating chrome (tab bar) so it separates from cards,
+  // plus a lighter secondary text that keeps contrast on it.
+  surfaceRaised: '#34345A',
+  textOnRaised: '#B4B4D0',
 } as const;
 
 export const borderRadius = {
