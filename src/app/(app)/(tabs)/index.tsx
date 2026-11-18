@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter, useSegments } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@react-native-vector-icons/ionicons";
+import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 
 import { borderRadius, colors, spacing, typography } from "@/constants/theme";
 
@@ -17,6 +18,7 @@ import { AccountSheet } from "@/components/AccountSheet";
 import { CompletionSummary } from "@/components/CompletionSummary";
 import { HabitActionSheet } from "@/components/HabitActionSheet";
 import { HabitCard } from "@/components/HabitCard";
+import { SwipeableHabitRow } from "@/components/SwipeableHabitRow";
 import { useDeleteHabit } from "@/hooks/useDeleteHabit";
 import type { Habit } from "@/types/habit";
 
@@ -42,6 +44,16 @@ export default function HomeScreen() {
   const [actionHabitId, setActionHabitId] = useState<string | null>(null);
   const actionHabit = habits.find((h) => h.id === actionHabitId) ?? null;
   const { confirmDelete } = useDeleteHabit();
+  // Only one swiped-open row at a time.
+  const openRow = useRef<SwipeableMethods | null>(null);
+  const handleRowOpen = (row: SwipeableMethods) => {
+    if (openRow.current && openRow.current !== row) openRow.current.close();
+    openRow.current = row;
+  };
+  const closeOpenRow = () => {
+    openRow.current?.close();
+    openRow.current = null;
+  };
 
   const today = todayString();
   const summary = getTodayCompletionSummary(habits, logs, today);
@@ -85,6 +97,11 @@ export default function HomeScreen() {
     afterSheetCloses(() => router.push(`/(app)/habit/${habit.id}`));
   const handleDelete = (habit: Habit) =>
     afterSheetCloses(() => confirmDelete(habit));
+
+  // Swipe actions: no sheet to wait for.
+  const swipeView = (habit: Habit) => router.push(`/(app)/habit/${habit.id}`);
+  const swipeEdit = (habit: Habit) =>
+    router.push(`/(app)/habit/${habit.id}/edit`);
 
   useEffect(() => {
     const onRoutineScreen = pathSegments[1] === "routine";
@@ -171,17 +188,26 @@ export default function HomeScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           ListHeaderComponent={header}
+          onScrollBeginDrag={closeOpenRow}
           renderItem={({ item }) => (
-            <HabitCard
+            <SwipeableHabitRow
               habit={item}
-              logs={logs}
-              log={getLogForHabit(logs, item.id, today)}
-              onCheckToggle={handleCheckToggle}
-              onCountIncrement={handleCountIncrement}
-              onCountDecrement={handleCountDecrement}
-              onRoutinePress={handleRoutinePress}
-              onLongPress={setActionHabitId}
-            />
+              onView={swipeView}
+              onEdit={swipeEdit}
+              onDelete={(habit) => confirmDelete(habit)}
+              onOpen={handleRowOpen}
+            >
+              <HabitCard
+                habit={item}
+                logs={logs}
+                log={getLogForHabit(logs, item.id, today)}
+                onCheckToggle={handleCheckToggle}
+                onCountIncrement={handleCountIncrement}
+                onCountDecrement={handleCountDecrement}
+                onRoutinePress={handleRoutinePress}
+                onLongPress={setActionHabitId}
+              />
+            </SwipeableHabitRow>
           )}
         />
       )}
