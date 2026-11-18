@@ -1,9 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BackHandler, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  BackHandler,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Ionicons from "@react-native-vector-icons/ionicons";
 
-import { borderRadius, colors, spacing, typography } from "@/constants/theme";
+import {
+  borderRadius,
+  colors,
+  spacing,
+  typography,
+  withOpacity,
+} from "@/constants/theme";
 import { useHabitStore } from "@/stores/habitStore";
 import { useLogStore } from "@/stores/logStore";
 import { useRoutineSessionStore } from "@/stores/routineSessionStore";
@@ -17,6 +32,11 @@ import {
 } from "@/utils/routineSession";
 
 import { Button } from "@/components/Button";
+import { RoutineStepProgress } from "@/components/RoutineStepProgress";
+import { RoutineTimerRing } from "@/components/RoutineTimerRing";
+import { getStepTimerState } from "@/utils/routineSteps";
+
+const ROUTINE_TINT = "#C9BBFF";
 
 export default function RoutineTimerScreen() {
   const { habitId } = useLocalSearchParams<{ habitId: string }>();
@@ -133,38 +153,100 @@ export default function RoutineTimerScreen() {
     );
   }
 
+  const isFinalStep = currTaskIndex === tasks.length - 1;
+  const nextTask = isFinalStep ? null : tasks[currTaskIndex + 1];
+  const plannedSeconds = currentTask?.durationSeconds ?? 0;
+  const { elapsedRatio } = getStepTimerState(countdownTime, plannedSeconds);
+
   return (
     <SafeAreaView style={styles.safe}>
-      <Pressable style={styles.close} onPress={onRouterBack}>
-        <Text style={styles.closeText}>✕</Text>
-      </Pressable>
-
-      <View style={styles.content}>
-        <Text style={styles.habitName}>{habit.name}</Text>
-        <Text style={styles.stepLabel}>
-          Step {currTaskIndex + 1} of {tasks.length}
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={onRouterBack}
+          accessibilityRole="button"
+          accessibilityLabel="Close routine"
+          style={({ pressed }) => [styles.close, pressed && styles.pressed]}
+        >
+          <Ionicons name="close" size={20} color={colors.textPrimary} />
+        </Pressable>
+        <Text style={styles.habitName} numberOfLines={1}>
+          {habit.name}
         </Text>
-        <Text style={styles.taskLabel}>{currentTask?.label}</Text>
-
-        <View style={styles.timer}>
-          <Text style={styles.timerText}>{formatDuration(countdownTime)}</Text>
-          <Text style={styles.planned}>
-            planned {formatDuration(currentTask?.durationSeconds ?? 0)}
+        <View style={styles.stepPill}>
+          <Text style={styles.stepPillText}>
+            {currTaskIndex + 1} / {tasks.length}
           </Text>
         </View>
       </View>
 
-      <View style={styles.footer}>
-        <Button
-          title={
-            currTaskIndex === tasks.length - 1
-              ? "Finish Routine"
-              : "Complete Step"
-          }
-          onPress={handleCompleteStep}
-          loading={submitting}
+      <RoutineStepProgress
+        total={tasks.length}
+        currentIndex={currTaskIndex}
+        currentRatio={elapsedRatio}
+      />
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.taskLabel}>{currentTask?.label}</Text>
+
+        <RoutineTimerRing
+          countdownSeconds={countdownTime}
+          plannedSeconds={plannedSeconds}
         />
-      </View>
+
+        {currentTask?.description ? (
+          <View style={styles.howTo}>
+            <View style={styles.howToHeader}>
+              <Ionicons
+                name="information-circle-outline"
+                size={16}
+                color={ROUTINE_TINT}
+              />
+              <Text style={styles.howToLabel}>HOW TO</Text>
+            </View>
+            <Text style={styles.howToText}>{currentTask.description}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.upNext}>
+          <Text style={styles.upNextLabel}>
+            {nextTask ? "UP NEXT" : "LAST STEP"}
+          </Text>
+          <Text style={styles.upNextName} numberOfLines={1}>
+            {nextTask ? nextTask.label : "Then you're done"}
+          </Text>
+          {nextTask ? (
+            <Text style={styles.upNextTime}>
+              {formatDuration(nextTask.durationSeconds)}
+            </Text>
+          ) : null}
+        </View>
+      </ScrollView>
+
+      <Pressable
+        onPress={handleCompleteStep}
+        disabled={submitting}
+        accessibilityRole="button"
+        style={({ pressed }) => [
+          styles.complete,
+          pressed && styles.completePressed,
+          submitting && styles.completeDisabled,
+        ]}
+      >
+        {submitting ? (
+          <ActivityIndicator color={colors.textPrimary} />
+        ) : (
+          <>
+            <Ionicons name="checkmark" size={24} color={colors.textPrimary} />
+            <Text style={styles.completeText}>
+              {isFinalStep ? "Finish routine" : "Complete step"}
+            </Text>
+          </>
+        )}
+      </Pressable>
     </SafeAreaView>
   );
 }
@@ -173,59 +255,141 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: spacing.lg,
+    paddingHorizontal: 20,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    gap: 18,
   },
-  close: {
-    alignSelf: "flex-end",
-    padding: spacing.sm,
-  },
-  closeText: {
-    fontSize: 24,
-    color: colors.textSecondary,
-  },
-  content: {
-    flex: 1,
+  topBar: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
     gap: spacing.md,
   },
-  habitName: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textTransform: "uppercase",
-    letterSpacing: 2,
+  close: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.pill,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  stepLabel: {
-    ...typography.label,
-    color: colors.primary,
+  habitName: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    color: colors.textSecondary,
+  },
+  stepPill: {
+    minWidth: 44,
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: borderRadius.pill,
+    backgroundColor: withOpacity(colors.routine, 0.22),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepPillText: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: ROUTINE_TINT,
+    fontVariant: ["tabular-nums"],
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    flexGrow: 1,
+    justifyContent: "center",
+    gap: 18,
+    paddingVertical: spacing.sm,
   },
   taskLabel: {
-    ...typography.title,
-    fontSize: 32,
+    fontSize: 40,
+    fontWeight: "900",
+    letterSpacing: -0.8,
     color: colors.textPrimary,
     textAlign: "center",
   },
-  timer: {
-    alignItems: "center",
-    marginTop: spacing.lg,
+  howTo: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.xl * 2,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: 18,
+    gap: spacing.sm,
   },
-  timerText: {
-    fontSize: 64,
+  howToHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  howToLabel: {
+    fontSize: 12,
     fontWeight: "800",
-    color: colors.primary,
+    letterSpacing: 1.2,
+    color: ROUTINE_TINT,
+  },
+  howToText: {
+    fontSize: 16,
+    fontWeight: "600",
+    lineHeight: 23,
+    color: "#E4E4F5",
+  },
+  upNext: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: spacing.xs,
+  },
+  upNextLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+    color: colors.textSecondary,
+  },
+  upNextName: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.textPrimary,
+  },
+  upNextTime: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: ROUTINE_TINT,
     fontVariant: ["tabular-nums"],
   },
-  planned: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
+  complete: {
+    height: 62,
+    borderRadius: borderRadius.pill,
+    backgroundColor: colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
   },
-  footer: {
-    paddingBottom: spacing.md,
+  completePressed: {
+    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
+  },
+  completeDisabled: {
+    opacity: 0.6,
+  },
+  completeText: {
+    fontSize: 19,
+    fontWeight: "900",
+    color: colors.textPrimary,
+  },
+  pressed: {
+    opacity: 0.7,
   },
   error: {
     color: colors.textSecondary,

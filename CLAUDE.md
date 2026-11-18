@@ -74,6 +74,7 @@ utils/ # Habit logic, date helpers
 {
   id: string
   label: string
+  description?: string      // optional, max 200 chars; omitted when empty
   durationSeconds: number
 }
 ```
