@@ -8,6 +8,7 @@ export default function AppLayout() {
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.textPrimary,
         headerTitleStyle: { fontWeight: '700' },
+        headerBackButtonDisplayMode: 'minimal',
         contentStyle: { backgroundColor: colors.background },
       }}
     >
