@@ -43,6 +43,12 @@ Habit tracker mobile app — check, count, and routine habits with Firebase sync
    npx expo run:android
    ```
 
+5. **Build on Android**
+
+   ```bash
+   yarn android:release
+   ```
+
 ## Architecture
 
 - **Firebase Auth** — email/password sessions persisted via MMKV
