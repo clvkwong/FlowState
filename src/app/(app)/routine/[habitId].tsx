@@ -199,14 +199,6 @@ export default function RoutineTimerScreen() {
 
         {currentTask?.description ? (
           <View style={styles.howTo}>
-            <View style={styles.howToHeader}>
-              <Ionicons
-                name="information-circle-outline"
-                size={16}
-                color={ROUTINE_TINT}
-              />
-              <Text style={styles.howToLabel}>HOW TO</Text>
-            </View>
             <Text style={styles.howToText}>{currentTask.description}</Text>
           </View>
         ) : null}
@@ -320,17 +312,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: 18,
     gap: spacing.sm,
-  },
-  howToHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  howToLabel: {
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    color: ROUTINE_TINT,
   },
   howToText: {
     fontSize: 16,
