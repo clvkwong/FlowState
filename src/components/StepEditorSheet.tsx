@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +9,7 @@ import {
   View,
 } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Button } from "@/components/Button";
 import {
   borderRadius,
@@ -139,7 +138,10 @@ export function StepEditorSheet({
           accessibilityLabel="Close"
         />
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          // keyboard-controller's version: RN's built-in one is a no-op on
+          // Android under edge-to-edge (SDK 53+), where adjustResize no longer
+          // resizes the window — and Modals never got it anyway.
+          behavior="padding"
           style={styles.avoider}
           pointerEvents="box-none"
         >
