@@ -10,6 +10,7 @@ interface HabitCardProps {
   logs: HabitLog[];
   onCheckToggle: (habitId: string, completed: boolean) => void;
   onCountIncrement: (habitId: string, target: number) => void;
+  onCountDecrement: (habitId: string, target: number) => void;
   onRoutinePress: (habitId: string) => void;
   onViewDetails: (habitId: string) => void;
 }
@@ -20,6 +21,7 @@ export function HabitCard({
   logs,
   onCheckToggle,
   onCountIncrement,
+  onCountDecrement,
   onRoutinePress,
   onViewDetails,
 }: HabitCardProps) {
@@ -43,6 +45,7 @@ export function HabitCard({
           log={log}
           logs={logs}
           onIncrement={() => onCountIncrement(habit.id, habit.target ?? 1)}
+          onDecrement={() => onCountDecrement(habit.id, habit.target ?? 1)}
           onLongPress={onLongPress}
         />
       );

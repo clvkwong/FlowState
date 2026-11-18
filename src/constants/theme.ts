@@ -10,6 +10,9 @@ export const colors = {
   textPrimary: '#F5F5FF',
   textSecondary: '#9090B0',
   danger: '#FF4D6D',
+  // Lighter tint of routine purple for small text on Surface (#6C47FF itself
+  // is too low-contrast for 12px labels).
+  routineLabel: '#A48BFF',
 } as const;
 
 export const borderRadius = {

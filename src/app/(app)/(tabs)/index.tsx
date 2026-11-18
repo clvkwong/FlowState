@@ -26,6 +26,7 @@ export default function HomeScreen() {
 
   const logCheck = useLogStore((s) => s.logCheck);
   const incrementCount = useLogStore((s) => s.incrementCount);
+  const decrementCount = useLogStore((s) => s.decrementCount);
   const startRoutineSession = useRoutineSessionStore((s) => s.startSession);
 
   const today = todayString();
@@ -39,6 +40,11 @@ export default function HomeScreen() {
   const handleCountIncrement = async (habitId: string, target: number) => {
     if (!user) return;
     await incrementCount(user.uid, habitId, target);
+  };
+
+  const handleCountDecrement = async (habitId: string, target: number) => {
+    if (!user) return;
+    await decrementCount(user.uid, habitId, target);
   };
 
   const handleRoutinePress = useCallback(
@@ -105,6 +111,7 @@ export default function HomeScreen() {
               log={getLogForHabit(logs, item.id, today)}
               onCheckToggle={handleCheckToggle}
               onCountIncrement={handleCountIncrement}
+              onCountDecrement={handleCountDecrement}
               onRoutinePress={handleRoutinePress}
               onViewDetails={(id) => router.push(`/(app)/habit/${id}`)}
             />
