@@ -82,17 +82,25 @@ export function getTodayLogs(
   return logs.filter((l) => l.date === date);
 }
 
+export interface CompletionSegment {
+  habitId: string;
+  type: Habit["type"];
+  completed: boolean;
+}
+
 export function getTodayCompletionSummary(
   habits: Habit[],
   logs: HabitLog[],
   date: string = todayString(),
 ) {
   const todayLogs = getTodayLogs(logs, date);
-  const completed = habits.filter((h) => {
-    const log = getLogForHabit(todayLogs, h.id, date);
-    return isHabitCompleted(h, log);
-  }).length;
-  return { completed, total: habits.length };
+  const segments: CompletionSegment[] = habits.map((h) => ({
+    habitId: h.id,
+    type: h.type,
+    completed: isHabitCompleted(h, getLogForHabit(todayLogs, h.id, date)),
+  }));
+  const completed = segments.filter((s) => s.completed).length;
+  return { completed, total: habits.length, segments };
 }
 
 export function getHabitHeatMapCells(

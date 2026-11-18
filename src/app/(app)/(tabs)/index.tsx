@@ -1,7 +1,8 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter, useSegments } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Ionicons from "@react-native-vector-icons/ionicons";
 
 import { borderRadius, colors, spacing, typography } from "@/constants/theme";
 
@@ -12,6 +13,7 @@ import { useRoutineSessionStore } from "@/stores/routineSessionStore";
 import { formatDisplayDate, todayString } from "@/utils/date";
 import { getLogForHabit, getTodayCompletionSummary } from "@/utils/habitLogic";
 
+import { AccountSheet } from "@/components/AccountSheet";
 import { CompletionSummary } from "@/components/CompletionSummary";
 import { HabitCard } from "@/components/HabitCard";
 
@@ -28,6 +30,8 @@ export default function HomeScreen() {
   const incrementCount = useLogStore((s) => s.incrementCount);
   const decrementCount = useLogStore((s) => s.decrementCount);
   const startRoutineSession = useRoutineSessionStore((s) => s.startSession);
+
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const today = todayString();
   const summary = getTodayCompletionSummary(habits, logs, today);
@@ -54,6 +58,13 @@ export default function HomeScreen() {
     [startRoutineSession],
   );
 
+  const handleSignOut = () => {
+    setAccountOpen(false);
+    signOut().catch(console.error);
+  };
+
+  const openNewHabit = () => router.push("/(app)/habit/new");
+
   useEffect(() => {
     const onRoutineScreen = pathSegments[1] === "routine";
     const onFocusTimerScreen = pathSegments[1] === "focus";
@@ -66,44 +77,79 @@ export default function HomeScreen() {
     }
   }, [pathSegments, activeRoutineSession, router]);
 
-  return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+  const header = (
+    <View style={styles.headerBlock}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>FlowState</Text>
+        <View style={styles.titleBlock}>
           <Text style={styles.date}>{formatDisplayDate(today)}</Text>
+          <Text style={styles.title} accessibilityRole="header">
+            Today
+          </Text>
         </View>
-        <Pressable onPress={() => signOut()} style={styles.signOut}>
-          <Text style={styles.signOutText}>Sign out</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            onPress={() => setAccountOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Account"
+            style={({ pressed }) => [
+              styles.iconButton,
+              styles.accountButton,
+              accountOpen && styles.accountButtonActive,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons
+              name="person-outline"
+              size={22}
+              color={colors.textPrimary}
+            />
+          </Pressable>
+          <Pressable
+            onPress={openNewHabit}
+            accessibilityRole="button"
+            accessibilityLabel="New habit"
+            style={({ pressed }) => [
+              styles.iconButton,
+              styles.newButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons name="add" size={28} color={colors.textPrimary} />
+          </Pressable>
+        </View>
       </View>
-
-      <View style={styles.summary}>
+      {habits.length > 0 ? (
         <CompletionSummary
           completed={summary.completed}
           total={summary.total}
+          segments={summary.segments}
         />
-      </View>
+      ) : null}
+    </View>
+  );
 
+  return (
+    <SafeAreaView style={styles.safe} edges={["top"]}>
       {habits.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>⚡</Text>
-          <Text style={styles.emptyTitle}>No habits yet</Text>
-          <Text style={styles.emptyBody}>
-            Create your first habit and start building momentum.
-          </Text>
-          <Pressable
-            style={styles.emptyCta}
-            onPress={() => router.push("/(app)/habit/new")}
-          >
-            <Text style={styles.emptyCtaText}>Create Habit</Text>
-          </Pressable>
+        <View style={styles.flex}>
+          {header}
+          <View style={styles.empty}>
+            <Text style={styles.emptyEmoji}>⚡</Text>
+            <Text style={styles.emptyTitle}>No habits yet</Text>
+            <Text style={styles.emptyBody}>
+              Create your first habit and start building momentum.
+            </Text>
+            <Pressable style={styles.emptyCta} onPress={openNewHabit}>
+              <Text style={styles.emptyCtaText}>Create Habit</Text>
+            </Pressable>
+          </View>
         </View>
       ) : (
         <FlatList
           data={habits}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          ListHeaderComponent={header}
           renderItem={({ item }) => (
             <HabitCard
               habit={item}
@@ -119,14 +165,12 @@ export default function HomeScreen() {
         />
       )}
 
-      {habits.length > 0 ? (
-        <Pressable
-          style={styles.fab}
-          onPress={() => router.push("/(app)/habit/new")}
-        >
-          <Text style={styles.fabText}>+</Text>
-        </Pressable>
-      ) : null}
+      <AccountSheet
+        visible={accountOpen}
+        email={user?.email}
+        onClose={() => setAccountOpen(false)}
+        onSignOut={handleSignOut}
+      />
     </SafeAreaView>
   );
 }
@@ -136,37 +180,71 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  flex: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  headerBlock: {
+    gap: spacing.md,
+    paddingTop: spacing.md,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    alignItems: "center",
+    gap: 12,
   },
-  greeting: {
-    ...typography.title,
-    color: colors.textPrimary,
+  titleBlock: {
+    flex: 1,
+    gap: 2,
   },
   date: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  signOut: {
-    padding: spacing.sm,
-  },
-  signOutText: {
     ...typography.caption,
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
     color: colors.textSecondary,
   },
-  summary: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+  title: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: colors.textPrimary,
+  },
+  headerActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  iconButton: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  accountButton: {
+    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: "#34344f",
+  },
+  accountButtonActive: {
+    borderColor: colors.primary,
+  },
+  newButton: {
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  pressed: {
+    transform: [{ scale: 0.92 }],
   },
   list: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: 100,
-    gap: spacing.md,
+    paddingHorizontal: 20,
+    paddingBottom: 120, // clear the floating tab bar
+    gap: 14,
   },
   empty: {
     flex: 1,
@@ -198,26 +276,5 @@ const styles = StyleSheet.create({
     ...typography.label,
     color: colors.textPrimary,
     fontSize: 16,
-  },
-  fab: {
-    position: "absolute",
-    right: spacing.lg,
-    bottom: 110, // Adjusted to move above the new tab bar
-    width: 60,
-    height: 60,
-    borderRadius: borderRadius.pill,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: colors.primary,
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  fabText: {
-    fontSize: 32,
-    color: colors.textPrimary,
-    lineHeight: 34,
-    fontWeight: "300",
   },
 });
