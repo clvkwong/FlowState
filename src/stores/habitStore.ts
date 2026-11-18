@@ -60,7 +60,12 @@ export const useHabitStore = create<HabitState>()(
       },
       updateHabit: async (habitId, input) => {
         await habitService.updateHabit(habitId, input);
-        get().updateHabitLocal(habitId, input);
+        get().updateHabitLocal(habitId, {
+          ...input,
+          ...(input.description !== undefined && {
+            description: input.description || undefined,
+          }),
+        });
       },
       deleteHabit: async (_userId, habitId) => {
         await habitService.deleteHabit(habitId);

@@ -122,6 +122,9 @@ export default function HabitDetailScreen() {
           </Text>
         </View>
         <Text style={styles.name}>{habit.name}</Text>
+        {habit.description ? (
+          <Text style={styles.description}>{habit.description}</Text>
+        ) : null}
         {createdDate ? (
           <Text style={styles.created}>Created {createdDate}</Text>
         ) : null}
@@ -350,6 +353,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: -0.5,
     color: colors.textPrimary,
+  },
+  description: {
+    ...typography.body,
+    lineHeight: 23,
+    color: colors.textPrimary,
+    opacity: 0.85,
   },
   created: {
     ...typography.label,

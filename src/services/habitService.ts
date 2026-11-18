@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDocs,
   query,
@@ -25,6 +26,7 @@ function docToHabit(id: string, data: Record<string, unknown>): Habit {
     id,
     userId: data.userId as string,
     name: data.name as string,
+    description: (data.description as string | undefined) || undefined,
     type: data.type as Habit["type"],
     target: data.target as number | undefined,
     tasks: data.tasks as Habit["tasks"],
@@ -51,6 +53,7 @@ export async function createHabit(
     type: input.type,
     createdAt: serverTimestamp(),
   };
+  if (input.description) payload.description = input.description;
   if (input.type === "count") payload.target = input.target;
   if (input.type === "routine") payload.tasks = input.tasks;
 
@@ -59,6 +62,7 @@ export async function createHabit(
     id: ref.id,
     userId,
     name: input.name,
+    description: input.description || undefined,
     type: input.type,
     target: input.target,
     tasks: input.tasks,
@@ -72,6 +76,8 @@ export async function updateHabit(
 ): Promise<void> {
   const payload: Record<string, unknown> = {};
   if (input.name !== undefined) payload.name = input.name;
+  if (input.description !== undefined)
+    payload.description = input.description || deleteField();
   if (input.target !== undefined) payload.target = input.target;
   if (input.tasks !== undefined) payload.tasks = input.tasks;
   await updateDoc(doc(db, "habits", habitId), payload);
