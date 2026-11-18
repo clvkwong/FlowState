@@ -161,11 +161,7 @@ export function StepEditorSheet({
                         {isNew ? "New step" : "Edit step"}
                       </Text>
                     </View>
-                    <IconButton
-                      icon="close"
-                      label="Close"
-                      onPress={onClose}
-                    />
+                    <IconButton icon="close" label="Close" onPress={onClose} />
                   </View>
 
                   <View style={styles.field}>
@@ -241,10 +237,6 @@ export function StepEditorSheet({
                         <Text style={styles.durationValue}>
                           {formatDuration(draft.durationSeconds)}
                         </Text>
-                        <View style={styles.tapHint}>
-                          <Ionicons name="pencil" size={11} color={ROUTINE_TINT} />
-                          <Text style={styles.tapHintText}>TAP TO TYPE</Text>
-                        </View>
                       </Pressable>
                       <IconButton
                         icon="add"
@@ -263,7 +255,9 @@ export function StepEditorSheet({
                     </View>
                     <PresetRow
                       selected={draft.durationSeconds}
-                      onSelect={(durationSeconds) => update({ durationSeconds })}
+                      onSelect={(durationSeconds) =>
+                        update({ durationSeconds })
+                      }
                     />
                   </View>
 
@@ -628,18 +622,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderBottomColor: colors.primary,
     borderStyle: "dotted",
-  },
-  tapHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 6,
-  },
-  tapHintText: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1,
-    color: ROUTINE_TINT,
   },
   presets: {
     flexDirection: "row",
