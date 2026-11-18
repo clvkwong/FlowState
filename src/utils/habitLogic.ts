@@ -38,6 +38,20 @@ export function getCountProgress(habit: Habit, log?: HabitLog) {
   return { current, target, ratio: Math.min(current / target, 1) };
 }
 
+/**
+ * Next count + completion flag after a +1 / -1 step on a count habit.
+ * Never goes below 0; `completed` is re-derived so undoing below the
+ * target clears the done state.
+ */
+export function stepCount(
+  current: number,
+  delta: 1 | -1,
+  target: number,
+): { count: number; completed: boolean } {
+  const count = Math.max(0, current + delta);
+  return { count, completed: count >= target };
+}
+
 export function getTaskActualDuration(
   log: HabitLog | undefined,
   taskId: string,

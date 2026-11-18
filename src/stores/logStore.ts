@@ -7,6 +7,7 @@ import { getLogPersistKey } from "@/storage/persistKeys";
 import { storage } from "@/storage/mmkv";
 import * as logService from "@/services/logService";
 import { todayString } from "@/utils/date";
+import { stepCount } from "@/utils/habitLogic";
 
 interface LogState {
   logs: HabitLog[];
@@ -27,6 +28,12 @@ interface LogState {
     habitId: string,
     target: number,
   ) => Promise<HabitLog>;
+  /** Undo one count press. No-op (returns the current log) when already at 0. */
+  decrementCount: (
+    userId: string,
+    habitId: string,
+    target: number,
+  ) => Promise<HabitLog | undefined>;
   completeRoutine: (
     userId: string,
     session: RoutineSession,
@@ -91,14 +98,37 @@ export const useLogStore = create<LogState>()(
         const existing = get().logs.find(
           (l) => l.habitId === habitId && l.date === date,
         );
-        const nextCount = (existing?.count ?? 0) + 1;
-        const completed = nextCount >= target;
+        const { count, completed } = stepCount(
+          existing?.count ?? 0,
+          1,
+          target,
+        );
         const log = await logService.upsertLog({
           userId,
           habitId,
           date,
           completed,
-          count: nextCount,
+          count,
+        });
+        get().upsertLogLocal(log);
+        return log;
+      },
+      decrementCount: async (userId, habitId, target) => {
+        const date = todayString();
+        const existing = get().logs.find(
+          (l) => l.habitId === habitId && l.date === date,
+        );
+        // Nothing to undo: no log yet today, or already at 0.
+        if (!existing || (existing.count ?? 0) <= 0) return existing;
+        const { count, completed } = stepCount(existing.count ?? 0, -1, target);
+        // Same per-day log is updated in place; a count of 0 is kept (not
+        // deleted) and already reads as "nothing done" in heat map + history.
+        const log = await logService.upsertLog({
+          userId,
+          habitId,
+          date,
+          completed,
+          count,
         });
         get().upsertLogLocal(log);
         return log;
