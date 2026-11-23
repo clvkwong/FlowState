@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AppTextInput } from "@/components/AppTextInput";
 import { Button } from "@/components/Button";
+import { HabitScheduleFields } from "@/components/HabitScheduleFields";
 import { KeyboardAwareScreen } from "@/components/KeyboardAwareScreen";
 import {
   borderRadius,
@@ -10,7 +11,14 @@ import {
   spacing,
   typography,
 } from "@/constants/theme";
-import type { CreateHabitInput, Habit, HabitType } from "@/types/habit";
+import type {
+  CreateHabitInput,
+  Habit,
+  HabitType,
+  TimeOfDay,
+  Weekday,
+} from "@/types/habit";
+import { ALL_WEEKDAYS } from "@/utils/schedule";
 
 interface HabitFormProps {
   initial?: Habit;
@@ -43,6 +51,12 @@ export function HabitForm({
   );
   const [type, setType] = useState<HabitType>(initial?.type ?? "check");
   const [target, setTarget] = useState(String(initial?.target ?? 8));
+  const [days, setDays] = useState<Weekday[]>(
+    initial?.days?.length ? initial.days : ALL_WEEKDAYS,
+  );
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(
+    initial?.timeOfDay ?? "anytime",
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -60,6 +74,10 @@ export function HabitForm({
       setError("Target must be at least 1");
       return;
     }
+    if (days.length === 0) {
+      setError("Pick at least one day");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -67,6 +85,8 @@ export function HabitForm({
         name: name.trim(),
         description: description.trim(),
         type,
+        days,
+        timeOfDay,
       };
       if (type === "count") input.target = Number(target);
       await onSubmit(input);
@@ -172,6 +192,13 @@ export function HabitForm({
           </Pressable>
         </View>
       ) : null}
+
+      <HabitScheduleFields
+        days={days}
+        onDaysChange={setDays}
+        timeOfDay={timeOfDay}
+        onTimeOfDayChange={setTimeOfDay}
+      />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 

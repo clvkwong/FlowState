@@ -1,4 +1,4 @@
-import type { HabitType } from '@/types/habit';
+import type { HabitType, TimeOfDay } from '@/types/habit';
 
 export const colors = {
   primary: '#6C47FF',
@@ -17,6 +17,11 @@ export const colors = {
   // plus a lighter secondary text that keeps contrast on it.
   surfaceRaised: '#34345A',
   textOnRaised: '#B4B4D0',
+  // Time-of-day section accents (icons and the "NOW" tag).
+  morning: '#FFB547',
+  afternoon: '#A8E63D',
+  evening: '#A48BFF',
+  anytime: '#00D4FF',
 } as const;
 
 export const borderRadius = {
@@ -52,6 +57,10 @@ export function getHabitAccent(type: HabitType): string {
     case 'routine':
       return colors.routine;
   }
+}
+
+export function getTimeOfDayAccent(timeOfDay: TimeOfDay): string {
+  return colors[timeOfDay];
 }
 
 export function withOpacity(hex: string, opacity: number): string {

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useHabitStore } from '@/stores/habitStore';
 import { useLogStore } from '@/stores/logStore';
 import type { CreateHabitInput, UpdateHabitInput } from '@/types/habit';
+import { normalizeDays } from '@/utils/schedule';
 
 export default function EditHabitScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,6 +34,9 @@ export default function EditHabitScreen() {
       description: input.description ?? '',
     };
     if (input.target !== undefined) updates.target = input.target;
+    // Every day is stored as no schedule; null clears an existing one.
+    updates.days = normalizeDays(input.days) ?? null;
+    if (input.timeOfDay) updates.timeOfDay = input.timeOfDay;
     await updateHabit(habit.id, updates);
     router.back();
   };

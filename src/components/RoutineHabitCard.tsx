@@ -24,6 +24,8 @@ interface RoutineHabitCardProps {
   logs: HabitLog[];
   onPress: () => void;
   onLongPress?: () => void;
+  /** View-only (another day is selected): the primary action is off. */
+  readOnly?: boolean;
 }
 
 export function RoutineHabitCard({
@@ -32,6 +34,7 @@ export function RoutineHabitCard({
   logs,
   onPress,
   onLongPress,
+  readOnly = false,
 }: RoutineHabitCardProps) {
   const completed = isRoutineCompleted(log);
   const accent = getHabitAccent("routine");
@@ -46,9 +49,10 @@ export function RoutineHabitCard({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={readOnly ? undefined : onPress}
       onLongPress={onLongPress}
       accessibilityRole="button"
+      accessibilityState={{ disabled: readOnly }}
       accessibilityLabel={
         completed ? `${habit.name}, completed. Run again` : `Start ${habit.name}`
       }
@@ -80,6 +84,7 @@ export function RoutineHabitCard({
                   backgroundColor: accent,
                   shadowColor: accent,
                 },
+            readOnly && styles.readOnly,
           ]}
         >
           {completed ? (
@@ -130,6 +135,9 @@ const styles = StyleSheet.create({
   },
   sub: {
     color: colors.textSecondary,
+  },
+  readOnly: {
+    opacity: 0.45,
   },
   play: {
     width: 60,

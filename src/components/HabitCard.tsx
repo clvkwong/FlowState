@@ -14,6 +14,8 @@ interface HabitCardProps {
   onRoutinePress: (habitId: string) => void;
   /** Opens the habit's action menu (edit / view / delete). */
   onLongPress: (habitId: string) => void;
+  /** View-only: another day is selected on the home screen. */
+  readOnly?: boolean;
 }
 
 export function HabitCard({
@@ -25,6 +27,7 @@ export function HabitCard({
   onCountDecrement,
   onRoutinePress,
   onLongPress: onHabitLongPress,
+  readOnly = false,
 }: HabitCardProps) {
   const onLongPress = () => onHabitLongPress(habit.id);
 
@@ -37,6 +40,7 @@ export function HabitCard({
           logs={logs}
           onToggle={() => onCheckToggle(habit.id, !(log?.completed ?? false))}
           onLongPress={onLongPress}
+          readOnly={readOnly}
         />
       );
     case 'count':
@@ -48,6 +52,7 @@ export function HabitCard({
           onIncrement={() => onCountIncrement(habit.id, habit.target ?? 1)}
           onDecrement={() => onCountDecrement(habit.id, habit.target ?? 1)}
           onLongPress={onLongPress}
+          readOnly={readOnly}
         />
       );
     case 'routine':
@@ -58,6 +63,7 @@ export function HabitCard({
           logs={logs}
           onPress={() => onRoutinePress(habit.id)}
           onLongPress={onLongPress}
+          readOnly={readOnly}
         />
       );
   }
