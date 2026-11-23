@@ -64,6 +64,8 @@ utils/ # Habit logic, date helpers
   type: 'check' | 'count' | 'routine'
   target?: number           // count habits only
   tasks?: RoutineTask[]     // routine habits only
+  days?: number[]           // 0 = Sun … 6 = Sat; omitted = every day
+  timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'anytime' // omitted = anytime
   createdAt: Timestamp
 }
 ```
@@ -156,6 +158,7 @@ Bold, high-energy, gamified. Inspired by Streaks and Duolingo — reward complet
 - Bottom tabs: floating pill on a raised surface (`surfaceRaised`, light outline, deep shadow) with a fade behind it (`FloatingTabBar`); each tab is icon + label, the active one is a solid primary pill.
 - Step-through timer view for routine habits — fullscreen, one task at a time.
 - Streak/completion counter on the home screen — make it prominent.
+- Home schedule: week strip (today ±3 days) and time-of-day pills. Today defaults to "Up next" (current window onward + Anytime); earlier windows collapse into one "still open" banner. Sections run Morning → Afternoon → Evening → Anytime, incomplete first. Other days are view-only. Windows: morning < 12:00, afternoon 12–17, evening ≥ 17 (`utils/schedule.ts`).
 
 ### What to avoid
 

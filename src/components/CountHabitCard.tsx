@@ -23,6 +23,8 @@ interface CountHabitCardProps {
   onIncrement: () => void;
   onDecrement: () => void;
   onLongPress?: () => void;
+  /** View-only (another day is selected): the primary action is off. */
+  readOnly?: boolean;
 }
 
 export function CountHabitCard({
@@ -32,6 +34,7 @@ export function CountHabitCard({
   onIncrement,
   onDecrement,
   onLongPress,
+  readOnly = false,
 }: CountHabitCardProps) {
   const completed = isCountCompleted(habit, log);
   const accent = getHabitAccent("count");
@@ -100,7 +103,7 @@ export function CountHabitCard({
         <View style={styles.stepper}>
           <Pressable
             onPress={handleDecrement}
-            disabled={atZero}
+            disabled={atZero || readOnly}
             accessibilityRole="button"
             accessibilityLabel={`Remove one from ${habit.name}`}
             hitSlop={4}
@@ -108,7 +111,7 @@ export function CountHabitCard({
               styles.stepButton,
               styles.minus,
               { borderColor: accent, backgroundColor: withOpacity(accent, 0.08) },
-              atZero && styles.disabled,
+              (atZero || readOnly) && styles.disabled,
               pressed && styles.pressed,
             ]}
           >
@@ -116,6 +119,7 @@ export function CountHabitCard({
           </Pressable>
           <Pressable
             onPress={handleIncrement}
+            disabled={readOnly}
             accessibilityRole="button"
             accessibilityLabel={`Add one to ${habit.name}`}
             hitSlop={4}
@@ -123,6 +127,7 @@ export function CountHabitCard({
               styles.stepButton,
               styles.plus,
               { backgroundColor: accent, shadowColor: accent },
+              readOnly && styles.disabled,
               pressed && styles.pressed,
             ]}
           >

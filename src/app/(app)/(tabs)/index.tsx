@@ -5,26 +5,70 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@react-native-vector-icons/ionicons";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 
-import { borderRadius, colors, spacing, typography } from "@/constants/theme";
+import {
+  borderRadius,
+  colors,
+  spacing,
+  typography,
+  withOpacity,
+} from "@/constants/theme";
 
 import { useAuthStore } from "@/stores/authStore";
 import { useHabitStore } from "@/stores/habitStore";
 import { useLogStore } from "@/stores/logStore";
 import { useRoutineSessionStore } from "@/stores/routineSessionStore";
-import { formatDisplayDate, todayString } from "@/utils/date";
+import {
+  addDays,
+  formatDateString,
+  formatDisplayDate,
+  parseDateString,
+} from "@/utils/date";
 import { getLogForHabit, getTodayCompletionSummary } from "@/utils/habitLogic";
+import {
+  type ScheduleFilter,
+  type ScheduleSection,
+  buildScheduleView,
+  getHabitsForDate,
+} from "@/utils/schedule";
 
 import { AccountSheet } from "@/components/AccountSheet";
 import { CompletionSummary } from "@/components/CompletionSummary";
 import { HabitActionSheet } from "@/components/HabitActionSheet";
 import { HabitCard } from "@/components/HabitCard";
+import { ScheduleFilterBar } from "@/components/ScheduleFilterBar";
+import { ScheduleSectionHeader } from "@/components/ScheduleSectionHeader";
 import { SwipeableHabitRow } from "@/components/SwipeableHabitRow";
+import { WeekStrip } from "@/components/WeekStrip";
 import { useDeleteHabit } from "@/hooks/useDeleteHabit";
+import { useNow } from "@/hooks/useNow";
 import type { Habit } from "@/types/habit";
 
 // Let the sheet's dismiss animation finish before navigating or showing an
 // Alert; iOS drops Alerts presented while a Modal is still closing.
 const SHEET_DISMISS_MS = 250;
+
+type ListRow =
+  | { kind: "earlier"; key: string; count: number }
+  | { kind: "section"; key: string; section: ScheduleSection }
+  | { kind: "habit"; key: string; habit: Habit };
+
+function dayTitle(date: string, today: string): string {
+  if (date === today) return "Today";
+  const base = parseDateString(today);
+  if (date === formatDateString(addDays(base, 1))) return "Tomorrow";
+  if (date === formatDateString(addDays(base, -1))) return "Yesterday";
+  return parseDateString(date).toLocaleDateString(undefined, {
+    weekday: "long",
+  });
+}
+
+const EMPTY_TITLES: Record<ScheduleFilter, string> = {
+  next: "All clear",
+  all: "Rest day",
+  morning: "Slow morning",
+  afternoon: "Open afternoon",
+  evening: "Free evening",
+};
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -55,8 +99,49 @@ export default function HomeScreen() {
     openRow.current = null;
   };
 
-  const today = todayString();
-  const summary = getTodayCompletionSummary(habits, logs, today);
+  const now = useNow();
+  const today = formatDateString(now);
+  // null follows today, so the view rolls over at midnight.
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
+  const selectedDate = pickedDate ?? today;
+  const isToday = selectedDate === today;
+  const [filter, setFilter] = useState<ScheduleFilter>("next");
+  const activeFilter: ScheduleFilter =
+    !isToday && filter === "next" ? "all" : filter;
+
+  const selectDate = (date: string) => {
+    closeOpenRow();
+    setPickedDate(date === today ? null : date);
+    if (date === today) setFilter("next");
+    else if (filter === "next") setFilter("all");
+  };
+
+  const dayHabits = getHabitsForDate(habits, selectedDate);
+  const summary = getTodayCompletionSummary(dayHabits, logs, selectedDate);
+  const isFuture = selectedDate > today;
+  const summaryMessage =
+    dayHabits.length === 0
+      ? "Nothing scheduled. Enjoy the day off."
+      : isFuture
+        ? `${dayHabits.length} ${dayHabits.length === 1 ? "habit" : "habits"} planned`
+        : !isToday && summary.completed < summary.total
+          ? `${summary.total - summary.completed} missed that day`
+          : undefined;
+
+  const view = buildScheduleView(habits, logs, selectedDate, activeFilter, {
+    isToday,
+    now,
+  });
+  const rows: ListRow[] = [];
+  if (view.openEarlier > 0) {
+    rows.push({ kind: "earlier", key: "earlier", count: view.openEarlier });
+  }
+  for (const section of view.sections) {
+    rows.push({ kind: "section", key: `s-${section.timeOfDay}`, section });
+    for (const habit of section.habits) {
+      rows.push({ kind: "habit", key: habit.id, habit });
+    }
+  }
 
   const handleCheckToggle = async (habitId: string, completed: boolean) => {
     if (!user) return;
@@ -119,9 +204,9 @@ export default function HomeScreen() {
     <View style={styles.headerBlock}>
       <View style={styles.header}>
         <View style={styles.titleBlock}>
-          <Text style={styles.date}>{formatDisplayDate(today)}</Text>
+          <Text style={styles.date}>{formatDisplayDate(selectedDate)}</Text>
           <Text style={styles.title} accessibilityRole="header">
-            Today
+            {dayTitle(selectedDate, today)}
           </Text>
         </View>
         <View style={styles.headerActions}>
@@ -157,11 +242,30 @@ export default function HomeScreen() {
         </View>
       </View>
       {habits.length > 0 ? (
-        <CompletionSummary
-          completed={summary.completed}
-          total={summary.total}
-          segments={summary.segments}
-        />
+        <>
+          <WeekStrip
+            today={today}
+            selected={selectedDate}
+            habits={habits}
+            logs={logs}
+            onSelect={selectDate}
+          />
+          <CompletionSummary
+            completed={summary.completed}
+            total={summary.total}
+            segments={summary.segments}
+            message={summaryMessage}
+            dayLabel={isToday ? "today" : `on ${formatDisplayDate(selectedDate)}`}
+          />
+          <ScheduleFilterBar
+            value={activeFilter}
+            isToday={isToday}
+            onChange={(f) => {
+              closeOpenRow();
+              setFilter(f);
+            }}
+          />
+        </>
       ) : null}
     </View>
   );
@@ -184,31 +288,74 @@ export default function HomeScreen() {
         </View>
       ) : (
         <FlatList
-          data={habits}
-          keyExtractor={(item) => item.id}
+          data={rows}
+          keyExtractor={(item) => item.key}
           contentContainerStyle={styles.list}
           ListHeaderComponent={header}
+          ListEmptyComponent={
+            <View style={styles.windowEmpty}>
+              <Ionicons name="flash-outline" size={40} color={colors.check} />
+              <Text style={styles.windowEmptyTitle}>
+                {EMPTY_TITLES[activeFilter]}
+              </Text>
+              <Text style={styles.windowEmptyBody}>
+                Nothing scheduled here. Try another time of day, or add a habit.
+              </Text>
+            </View>
+          }
           onScrollBeginDrag={closeOpenRow}
-          renderItem={({ item }) => (
-            <SwipeableHabitRow
-              habit={item}
-              onView={swipeView}
-              onEdit={swipeEdit}
-              onDelete={(habit) => confirmDelete(habit)}
-              onOpen={handleRowOpen}
-            >
-              <HabitCard
-                habit={item}
-                logs={logs}
-                log={getLogForHabit(logs, item.id, today)}
-                onCheckToggle={handleCheckToggle}
-                onCountIncrement={handleCountIncrement}
-                onCountDecrement={handleCountDecrement}
-                onRoutinePress={handleRoutinePress}
-                onLongPress={setActionHabitId}
-              />
-            </SwipeableHabitRow>
-          )}
+          renderItem={({ item }) => {
+            if (item.kind === "earlier") {
+              return (
+                <Pressable
+                  onPress={() => setFilter("all")}
+                  accessibilityRole="button"
+                  accessibilityHint="Shows the whole day"
+                  style={({ pressed }) => [
+                    styles.earlier,
+                    pressed && styles.pressedSoft,
+                  ]}
+                >
+                  <Ionicons name="time-outline" size={20} color={colors.danger} />
+                  <Text style={styles.earlierText}>
+                    Earlier today · {item.count} still open
+                  </Text>
+                  <Text style={styles.earlierCta}>Catch up ›</Text>
+                </Pressable>
+              );
+            }
+            if (item.kind === "section") {
+              return (
+                <ScheduleSectionHeader
+                  timeOfDay={item.section.timeOfDay}
+                  isNow={item.section.isNow}
+                  completed={item.section.completed}
+                  total={item.section.habits.length}
+                />
+              );
+            }
+            return (
+              <SwipeableHabitRow
+                habit={item.habit}
+                onView={swipeView}
+                onEdit={swipeEdit}
+                onDelete={(habit) => confirmDelete(habit)}
+                onOpen={handleRowOpen}
+              >
+                <HabitCard
+                  habit={item.habit}
+                  logs={logs}
+                  log={getLogForHabit(logs, item.habit.id, selectedDate)}
+                  onCheckToggle={handleCheckToggle}
+                  onCountIncrement={handleCountIncrement}
+                  onCountDecrement={handleCountDecrement}
+                  onRoutinePress={handleRoutinePress}
+                  onLongPress={setActionHabitId}
+                  readOnly={!isToday}
+                />
+              </SwipeableHabitRow>
+            );
+          }}
         />
       )}
 
@@ -300,6 +447,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 120, // clear the floating tab bar
     gap: 14,
+  },
+  earlier: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: withOpacity(colors.danger, 0.45),
+    backgroundColor: withOpacity(colors.danger, 0.1),
+  },
+  earlierText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  earlierCta: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#FF8FA3",
+  },
+  pressedSoft: {
+    opacity: 0.8,
+  },
+  windowEmpty: {
+    alignItems: "center",
+    gap: spacing.sm,
+    padding: spacing.xl,
+    borderRadius: borderRadius.xl,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: withOpacity(colors.primary, 0.45),
+    backgroundColor: colors.surface,
+  },
+  windowEmptyTitle: {
+    ...typography.heading,
+    color: colors.textPrimary,
+  },
+  windowEmptyBody: {
+    ...typography.body,
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: "center",
   },
   empty: {
     flex: 1,

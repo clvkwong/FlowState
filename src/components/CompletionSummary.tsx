@@ -14,6 +14,10 @@ interface CompletionSummaryProps {
   completed: number;
   total: number;
   segments: CompletionSegment[];
+  /** Overrides the default encouragement line. */
+  message?: string;
+  /** Spoken day, e.g. "today" or "on Monday". */
+  dayLabel?: string;
 }
 
 function getMessage(completed: number, total: number): string {
@@ -27,6 +31,8 @@ export function CompletionSummary({
   completed,
   total,
   segments,
+  message,
+  dayLabel = "today",
 }: CompletionSummaryProps) {
   const allDone = total > 0 && completed === total;
 
@@ -34,7 +40,7 @@ export function CompletionSummary({
     <View
       style={styles.container}
       accessible
-      accessibilityLabel={`${completed} of ${total} habits done today`}
+      accessibilityLabel={`${completed} of ${total} habits done ${dayLabel}`}
     >
       <View style={styles.header}>
         <Text style={styles.count}>
@@ -62,7 +68,7 @@ export function CompletionSummary({
           />
         ))}
       </View>
-      <Text style={styles.message}>{getMessage(completed, total)}</Text>
+      <Text style={styles.message}>{message ?? getMessage(completed, total)}</Text>
     </View>
   );
 }

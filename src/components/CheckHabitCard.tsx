@@ -21,6 +21,8 @@ interface CheckHabitCardProps {
   logs: HabitLog[];
   onToggle: () => void;
   onLongPress?: () => void;
+  /** View-only (another day is selected): the primary action is off. */
+  readOnly?: boolean;
 }
 
 export function CheckHabitCard({
@@ -29,6 +31,7 @@ export function CheckHabitCard({
   logs,
   onToggle,
   onLongPress,
+  readOnly = false,
 }: CheckHabitCardProps) {
   const completed = isCheckCompleted(log);
   const accent = getHabitAccent("check");
@@ -48,10 +51,10 @@ export function CheckHabitCard({
 
   return (
     <Pressable
-      onPress={handlePress}
+      onPress={readOnly ? undefined : handlePress}
       onLongPress={onLongPress}
       accessibilityRole="checkbox"
-      accessibilityState={{ checked: completed }}
+      accessibilityState={{ checked: completed, disabled: readOnly }}
       accessibilityLabel={habit.name}
       accessibilityHint="Long press for more options"
       style={[
@@ -73,6 +76,7 @@ export function CheckHabitCard({
             styles.check,
             { borderColor: accent },
             completed && { backgroundColor: accent },
+            readOnly && styles.readOnly,
             { transform: [{ scale: pop }] },
           ]}
         >
@@ -116,6 +120,9 @@ const styles = StyleSheet.create({
     ...typography.caption,
     letterSpacing: 1.5,
     fontWeight: "800",
+  },
+  readOnly: {
+    opacity: 0.45,
   },
   check: {
     width: 60,

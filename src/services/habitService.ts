@@ -11,7 +11,31 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/services/firebase";
-import type { CreateHabitInput, Habit, UpdateHabitInput } from "@/types/habit";
+import type {
+  CreateHabitInput,
+  Habit,
+  TimeOfDay,
+  UpdateHabitInput,
+  Weekday,
+} from "@/types/habit";
+import { normalizeDays } from "@/utils/schedule";
+
+const TIMES_OF_DAY: TimeOfDay[] = ["morning", "afternoon", "evening", "anytime"];
+
+function readTimeOfDay(value: unknown): TimeOfDay | undefined {
+  return TIMES_OF_DAY.includes(value as TimeOfDay)
+    ? (value as TimeOfDay)
+    : undefined;
+}
+
+function readDays(value: unknown): Weekday[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return normalizeDays(
+    value.filter(
+      (d): d is Weekday => Number.isInteger(d) && d >= 0 && d <= 6,
+    ),
+  );
+}
 
 export function generateHabitTaskId(): string {
   return doc(collection(db, "habits")).id;
@@ -30,6 +54,8 @@ function docToHabit(id: string, data: Record<string, unknown>): Habit {
     type: data.type as Habit["type"],
     target: data.target as number | undefined,
     tasks: data.tasks as Habit["tasks"],
+    days: readDays(data.days),
+    timeOfDay: readTimeOfDay(data.timeOfDay),
     createdAt:
       typeof createdAt === "object" && createdAt?.toDate
         ? createdAt.toDate().toISOString()
@@ -56,6 +82,9 @@ export async function createHabit(
   if (input.description) payload.description = input.description;
   if (input.type === "count") payload.target = input.target;
   if (input.type === "routine") payload.tasks = input.tasks;
+  const days = normalizeDays(input.days);
+  if (days) payload.days = days;
+  if (input.timeOfDay) payload.timeOfDay = input.timeOfDay;
 
   const ref = await addDoc(collection(db, "habits"), payload);
   return {
@@ -66,6 +95,8 @@ export async function createHabit(
     type: input.type,
     target: input.target,
     tasks: input.tasks,
+    days,
+    timeOfDay: input.timeOfDay,
     createdAt: new Date().toISOString(),
   };
 }
@@ -80,6 +111,9 @@ export async function updateHabit(
     payload.description = input.description || deleteField();
   if (input.target !== undefined) payload.target = input.target;
   if (input.tasks !== undefined) payload.tasks = input.tasks;
+  if (input.days !== undefined)
+    payload.days = normalizeDays(input.days) ?? deleteField();
+  if (input.timeOfDay !== undefined) payload.timeOfDay = input.timeOfDay;
   await updateDoc(doc(db, "habits", habitId), payload);
 }
 

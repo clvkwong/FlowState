@@ -1,5 +1,11 @@
 export type HabitType = 'check' | 'count' | 'routine';
 
+/** Part of the day a habit belongs to. 'anytime' habits show in every window. */
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'anytime';
+
+/** Day of week, matching Date#getDay(): 0 = Sunday … 6 = Saturday. */
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
 export interface RoutineTask {
   id: string;
   label: string;
@@ -15,6 +21,10 @@ export interface Habit {
   type: HabitType;
   target?: number;
   tasks?: RoutineTask[];
+  /** Days the habit is scheduled on. Omitted = every day. */
+  days?: Weekday[];
+  /** Omitted on habits created before scheduling existed = 'anytime'. */
+  timeOfDay?: TimeOfDay;
   createdAt: string;
 }
 
@@ -24,6 +34,8 @@ export interface CreateHabitInput {
   type: HabitType;
   target?: number;
   tasks?: RoutineTask[];
+  days?: Weekday[];
+  timeOfDay?: TimeOfDay;
 }
 
 export interface UpdateHabitInput {
@@ -31,4 +43,7 @@ export interface UpdateHabitInput {
   description?: string;
   target?: number;
   tasks?: RoutineTask[];
+  /** null clears the schedule back to every day. */
+  days?: Weekday[] | null;
+  timeOfDay?: TimeOfDay;
 }

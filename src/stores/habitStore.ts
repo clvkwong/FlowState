@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { normalizeDays } from "@/utils/schedule";
 import * as habitService from "@/services/habitService";
 import { getHabitPersistKey } from "@/storage/persistKeys";
 import { storage } from "@/storage/mmkv";
@@ -60,11 +61,13 @@ export const useHabitStore = create<HabitState>()(
       },
       updateHabit: async (habitId, input) => {
         await habitService.updateHabit(habitId, input);
+        const { days, ...rest } = input;
         get().updateHabitLocal(habitId, {
-          ...input,
+          ...rest,
           ...(input.description !== undefined && {
             description: input.description || undefined,
           }),
+          ...(days !== undefined && { days: normalizeDays(days) }),
         });
       },
       deleteHabit: async (_userId, habitId) => {
