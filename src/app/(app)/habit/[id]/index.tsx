@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -18,6 +18,7 @@ import {
   spacing,
   typography,
 } from "@/constants/theme";
+import { useAuthStore } from "@/stores/authStore";
 import { useHabitStore } from "@/stores/habitStore";
 import { useLogStore } from "@/stores/logStore";
 import type { Habit } from "@/types/habit";
@@ -33,6 +34,10 @@ import {
 
 import { Button } from "@/components/Button";
 import { HabitHistoryCard } from "@/components/HabitHistoryCard";
+import {
+  LogEditorSheet,
+  type LogEditorTarget,
+} from "@/components/LogEditorSheet";
 import { useDeleteHabit } from "@/hooks/useDeleteHabit";
 import { ProgressRing } from "@/components/ProgressRing";
 
@@ -47,6 +52,8 @@ export default function HabitDetailScreen() {
   const router = useRouter();
   const habit = useHabitStore((s) => s.habits.find((h) => h.id === id));
   const logs = useLogStore((s) => s.logs);
+  const user = useAuthStore((s) => s.user);
+  const [logEditor, setLogEditor] = useState<LogEditorTarget | null>(null);
   const { confirmDelete: confirmDeleteHabit, deletingId } = useDeleteHabit();
 
   const today = todayString();
@@ -108,12 +115,27 @@ export default function HabitDetailScreen() {
       />
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>History</Text>
-        {history.length > 0 ? (
-          <Text style={styles.sectionMeta}>
-            {history.length} {history.length === 1 ? singular : plural}
-          </Text>
-        ) : null}
+        <View style={styles.sectionTitles}>
+          <Text style={styles.sectionTitle}>History</Text>
+          {history.length > 0 ? (
+            <Text style={styles.sectionMeta}>
+              {history.length} {history.length === 1 ? singular : plural}
+            </Text>
+          ) : null}
+        </View>
+        <Pressable
+          onPress={() => setLogEditor({ mode: "create" })}
+          style={({ pressed }) => [
+            styles.logDay,
+            { borderColor: accent },
+            pressed && styles.logDayPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Log a day"
+        >
+          <Ionicons name="add" size={18} color={accent} />
+          <Text style={[styles.logDayText, { color: accent }]}>Log a day</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -126,7 +148,12 @@ export default function HabitDetailScreen() {
         contentContainerStyle={styles.list}
         ListHeaderComponent={header}
         renderItem={({ item }) => (
-          <HabitHistoryCard habit={habit} log={item} today={today} />
+          <HabitHistoryCard
+            habit={habit}
+            log={item}
+            today={today}
+            onEdit={() => setLogEditor({ mode: "edit", logId: item.id })}
+          />
         )}
         ItemSeparatorComponent={HistoryGap}
         ListEmptyComponent={
@@ -134,6 +161,7 @@ export default function HabitDetailScreen() {
             <Text style={styles.emptyTitle}>Nothing logged yet</Text>
             <Text style={styles.emptyBody}>
               Complete this habit and your sessions will stack up here.
+              Missed logging a day? Tap “Log a day” to add it.
             </Text>
           </View>
         }
@@ -160,6 +188,15 @@ export default function HabitDetailScreen() {
           disabled={deleting}
         />
       </View>
+
+      {user ? (
+        <LogEditorSheet
+          habit={habit}
+          userId={user.uid}
+          target={logEditor}
+          onClose={() => setLogEditor(null)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -406,6 +443,29 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 28,
     marginBottom: 12,
+  },
+  sectionTitles: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 10,
+    flexShrink: 1,
+  },
+  logDay: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    minHeight: 36,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.pill,
+    borderWidth: 2,
+    alignSelf: "center",
+  },
+  logDayPressed: {
+    transform: [{ scale: 0.96 }],
+  },
+  logDayText: {
+    ...typography.label,
+    fontWeight: "800",
   },
   sectionTitle: {
     ...typography.heading,
