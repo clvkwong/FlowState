@@ -1,13 +1,19 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import type { HabitLog } from "@/types/log";
+import type { Habit } from "@/types/habit";
+import type { HabitLog, LogValuesInput } from "@/types/log";
 import { RoutineSession } from "@/types/routineSession";
 import { getLogPersistKey } from "@/storage/persistKeys";
 import { storage } from "@/storage/mmkv";
 import * as logService from "@/services/logService";
 import { todayString } from "@/utils/date";
-import { stepCount } from "@/utils/habitLogic";
+import {
+  assertLoggableDate,
+  buildLogValues,
+  LogValidationError,
+  stepCount,
+} from "@/utils/habitLogic";
 
 interface LogState {
   logs: HabitLog[];
@@ -39,6 +45,26 @@ interface LogState {
     session: RoutineSession,
   ) => Promise<HabitLog>;
   deleteLogsForHabitRemote: (userId: string, habitId: string) => Promise<void>;
+  /**
+   * Log a habit for a given day — today or retroactively for a past day.
+   * Throws LogValidationError for a future/invalid date or bad values, and
+   * DuplicateLogError if that day already has a log (use updateLog).
+   */
+  createLog: (
+    userId: string,
+    habit: Habit,
+    date: string,
+    values: LogValuesInput,
+  ) => Promise<HabitLog>;
+  /** Edit an existing log (any date). Omitted values are kept. */
+  updateLog: (
+    habit: Habit,
+    logId: string,
+    values: LogValuesInput,
+  ) => Promise<HabitLog>;
+  /** Remove a single day's log. */
+  deleteLog: (logId: string) => Promise<void>;
+  removeLogLocal: (logId: string) => void;
 }
 
 let isRehydrating = false;
@@ -150,6 +176,36 @@ export const useLogStore = create<LogState>()(
         await logService.deleteLogsForHabit(userId, habitId);
         get().removeLogsForHabit(habitId);
       },
+      createLog: async (userId, habit, date, values) => {
+        assertLoggableDate(date);
+        const log = await logService.createLog({
+          userId,
+          habitId: habit.id,
+          date,
+          ...buildLogValues(habit, values),
+        });
+        get().upsertLogLocal(log);
+        return log;
+      },
+      updateLog: async (habit, logId, values) => {
+        const existing = get().logs.find((l) => l.id === logId);
+        if (!existing) throw new LogValidationError("Log not found");
+        if (existing.habitId !== habit.id) {
+          throw new LogValidationError("Log does not belong to this habit");
+        }
+        const log = await logService.updateLog(
+          existing,
+          buildLogValues(habit, values, existing),
+        );
+        get().upsertLogLocal(log);
+        return log;
+      },
+      deleteLog: async (logId) => {
+        await logService.deleteLog(logId);
+        get().removeLogLocal(logId);
+      },
+      removeLogLocal: (logId) =>
+        set({ logs: get().logs.filter((l) => l.id !== logId) }),
     }),
     {
       name: "log-store",

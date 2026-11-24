@@ -1,5 +1,5 @@
 import type { Habit } from "@/types/habit";
-import type { HabitLog } from "@/types/log";
+import type { HabitLog, LogValuesInput, LogWriteValues } from "@/types/log";
 import { getPastDateStrings, todayString } from "@/utils/date";
 
 export interface HabitHeatMapCell {
@@ -183,4 +183,87 @@ export function compareHabits(a: Habit, b: Habit): number {
 /** `order` for a newly created habit: after everything that exists. */
 export function nextHabitOrder(habits: Habit[]): number {
   return habits.reduce((max, h) => Math.max(max, (h.order ?? -1) + 1), 0);
+}
+
+export class LogValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "LogValidationError";
+  }
+}
+
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Throws unless `date` is a real YYYY-MM-DD day that is not after today.
+ * Logs can be added or edited retroactively, never for the future.
+ */
+export function assertLoggableDate(
+  date: string,
+  today: string = todayString(),
+): void {
+  if (!DATE_PATTERN.test(date)) {
+    throw new LogValidationError(`Invalid date "${date}", expected YYYY-MM-DD`);
+  }
+  const [y, m, d] = date.split("-").map(Number);
+  const parsed = new Date(y, m - 1, d);
+  if (
+    parsed.getFullYear() !== y ||
+    parsed.getMonth() !== m - 1 ||
+    parsed.getDate() !== d
+  ) {
+    throw new LogValidationError(`Invalid date "${date}"`);
+  }
+  // YYYY-MM-DD strings compare correctly as strings.
+  if (date > today) {
+    throw new LogValidationError("Cannot log a habit for a future date");
+  }
+}
+
+/**
+ * Validates user-entered log values against the habit and derives the
+ * fields to write. Merges over `existing` so a partial edit keeps the
+ * values it doesn't touch.
+ */
+export function buildLogValues(
+  habit: Habit,
+  input: LogValuesInput,
+  existing?: HabitLog,
+): LogWriteValues {
+  switch (habit.type) {
+    case "check":
+      return { completed: input.completed ?? existing?.completed ?? true };
+
+    case "count": {
+      const count = input.count ?? existing?.count ?? 0;
+      if (!Number.isInteger(count) || count < 0) {
+        throw new LogValidationError("Count must be a whole number ≥ 0");
+      }
+      return { count, completed: count >= (habit.target ?? 1) };
+    }
+
+    case "routine": {
+      const completedTasks = input.completedTasks ?? existing?.completedTasks;
+      if (completedTasks) {
+        const taskIds = new Set((habit.tasks ?? []).map((t) => t.id));
+        for (const task of completedTasks) {
+          if (!taskIds.has(task.taskId)) {
+            throw new LogValidationError(
+              `Task "${task.taskId}" is not part of this routine`,
+            );
+          }
+          if (
+            !Number.isFinite(task.actualDurationSeconds) ||
+            task.actualDurationSeconds < 0
+          ) {
+            throw new LogValidationError("Task duration must be ≥ 0 seconds");
+          }
+        }
+      }
+      return {
+        completed: input.completed ?? existing?.completed ?? true,
+        ...(completedTasks ? { completedTasks } : {}),
+      };
+    }
+  }
 }
