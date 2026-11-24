@@ -159,3 +159,18 @@ export function getHabitHistory(habit: Habit, logs: HabitLog[]): HabitLog[] {
     .filter((l) => l.habitId === habit.id && hasLoggedActivity(habit, l))
     .sort((a, b) => b.date.localeCompare(a.date));
 }
+
+/**
+ * Stable total order for habits: oldest created first, then name, then id.
+ * Firestore returns habits in document-id order (effectively random) while
+ * local creates append, so the stored array order is not meaningful.
+ */
+export function compareHabits(a: Habit, b: Habit): number {
+  const ta = Date.parse(a.createdAt);
+  const tb = Date.parse(b.createdAt);
+  const byTime = (Number.isNaN(ta) ? 0 : ta) - (Number.isNaN(tb) ? 0 : tb);
+  if (byTime !== 0) return byTime;
+  const byName = a.name.localeCompare(b.name);
+  if (byName !== 0) return byName;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}

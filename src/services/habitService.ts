@@ -18,6 +18,7 @@ import type {
   UpdateHabitInput,
   Weekday,
 } from "@/types/habit";
+import { compareHabits } from "@/utils/habitLogic";
 import { normalizeDays } from "@/utils/schedule";
 
 const TIMES_OF_DAY: TimeOfDay[] = ["morning", "afternoon", "evening", "anytime"];
@@ -66,7 +67,9 @@ function docToHabit(id: string, data: Record<string, unknown>): Habit {
 export async function fetchHabits(userId: string): Promise<Habit[]> {
   const q = query(collection(db, "habits"), where("userId", "==", userId));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => docToHabit(d.id, d.data()));
+  return snapshot.docs
+    .map((d) => docToHabit(d.id, d.data()))
+    .sort(compareHabits);
 }
 
 export async function createHabit(

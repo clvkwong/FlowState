@@ -1,7 +1,11 @@
 import type { Habit, TimeOfDay, Weekday } from "@/types/habit";
 import type { HabitLog } from "@/types/log";
 import { parseDateString } from "@/utils/date";
-import { getLogForHabit, isHabitCompleted } from "@/utils/habitLogic";
+import {
+  compareHabits,
+  getLogForHabit,
+  isHabitCompleted,
+} from "@/utils/habitLogic";
 
 /** Morning ends at noon, afternoon at 5 PM; evening runs to midnight. */
 export const AFTERNOON_START_HOUR = 12;
@@ -113,7 +117,8 @@ export interface ScheduleView {
 /**
  * Groups the day's scheduled habits into time-of-day sections for the home
  * list. Sections run morning → evening → anytime; within a section incomplete
- * habits come first, otherwise in their stored order. 'anytime' habits are
+ * habits come first, then oldest-created first (see `compareHabits`), so the
+ * order never depends on how the habits array happened to be assembled. 'anytime' habits are
  * included under every filter since they fit any window.
  */
 export function buildScheduleView(
@@ -142,8 +147,10 @@ export function buildScheduleView(
   const sections = shown
     .map((timeOfDay): ScheduleSection => {
       const inSection = dayHabits.filter((h) => getTimeOfDay(h) === timeOfDay);
-      const withDone = inSection.map((h, i) => ({ h, i, d: done(h) }));
-      withDone.sort((a, b) => Number(a.d) - Number(b.d) || a.i - b.i);
+      const withDone = inSection.map((h) => ({ h, d: done(h) }));
+      withDone.sort(
+        (a, b) => Number(a.d) - Number(b.d) || compareHabits(a.h, b.h),
+      );
       return {
         timeOfDay,
         isNow: options.isToday && timeOfDay === current,
