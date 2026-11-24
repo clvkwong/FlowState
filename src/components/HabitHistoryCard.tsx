@@ -34,9 +34,16 @@ interface HabitHistoryCardProps {
   habit: Habit;
   log: HabitLog;
   today: string;
+  /** Opens the log editor. Tap on check/count cards; long-press on routines (tap expands). */
+  onEdit?: () => void;
 }
 
-export function HabitHistoryCard({ habit, log, today }: HabitHistoryCardProps) {
+export function HabitHistoryCard({
+  habit,
+  log,
+  today,
+  onEdit,
+}: HabitHistoryCardProps) {
   const accent = getHabitAccent(habit.type);
   const completed = isHabitCompleted(habit, log);
   const isToday = log.date === today;
@@ -54,7 +61,14 @@ export function HabitHistoryCard({ habit, log, today }: HabitHistoryCardProps) {
   switch (habit.type) {
     case "check":
       return (
-        <View style={[cardStyle, styles.row]}>
+        <Pressable
+          onPress={onEdit}
+          onLongPress={onEdit}
+          disabled={!onEdit}
+          style={[cardStyle, styles.row]}
+          accessibilityRole="button"
+          accessibilityHint="Edit this day's log"
+        >
           <CheckBadge accent={accent} />
           <View style={styles.titles}>
             <Text style={styles.title}>{title}</Text>
@@ -63,7 +77,7 @@ export function HabitHistoryCard({ habit, log, today }: HabitHistoryCardProps) {
             ) : null}
           </View>
           <Text style={styles.time}>{formatTime(log.loggedAt)}</Text>
-        </View>
+        </Pressable>
       );
     case "count": {
       const { current, target, ratio } = getCountProgress(habit, log);
@@ -74,7 +88,14 @@ export function HabitHistoryCard({ habit, log, today }: HabitHistoryCardProps) {
           : "target missed";
       const subtitle = [dateSubtitle, status].filter(Boolean).join(" · ");
       return (
-        <View style={[cardStyle, styles.countCard]}>
+        <Pressable
+          onPress={onEdit}
+          onLongPress={onEdit}
+          disabled={!onEdit}
+          style={[cardStyle, styles.countCard]}
+          accessibilityRole="button"
+          accessibilityHint="Edit this day's log"
+        >
           <View style={styles.row}>
             <View style={styles.countTitles}>
               <Text style={styles.title}>{title}</Text>
@@ -98,7 +119,7 @@ export function HabitHistoryCard({ habit, log, today }: HabitHistoryCardProps) {
               ]}
             />
           </View>
-        </View>
+        </Pressable>
       );
     }
     case "routine":
@@ -110,6 +131,7 @@ export function HabitHistoryCard({ habit, log, today }: HabitHistoryCardProps) {
           title={title}
           dateSubtitle={dateSubtitle}
           highlighted={isToday}
+          onEdit={onEdit}
         />
       );
   }
@@ -122,6 +144,7 @@ interface RoutineHistoryCardProps {
   title: string;
   dateSubtitle: string | null;
   highlighted: boolean;
+  onEdit?: () => void;
 }
 
 function RoutineHistoryCard({
@@ -131,6 +154,7 @@ function RoutineHistoryCard({
   title,
   dateSubtitle,
   highlighted,
+  onEdit,
 }: RoutineHistoryCardProps) {
   const [expanded, setExpanded] = useState(false);
   const completedTasks = log.completedTasks ?? [];
@@ -159,8 +183,8 @@ function RoutineHistoryCard({
       ]}
     >
       <Pressable
-        onPress={toggle}
-        disabled={stepCount === 0}
+        onPress={stepCount > 0 ? toggle : onEdit}
+        onLongPress={onEdit}
         style={styles.row}
         accessibilityRole="button"
         accessibilityState={{ expanded }}
@@ -206,6 +230,16 @@ function RoutineHistoryCard({
               </View>
             );
           })}
+          {onEdit ? (
+            <Pressable
+              onPress={onEdit}
+              style={styles.editLink}
+              accessibilityRole="button"
+            >
+              <Ionicons name="pencil" size={14} color={colors.routineLabel} />
+              <Text style={styles.editLinkText}>Edit log</Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -332,6 +366,18 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.textPrimary,
     fontVariant: ["tabular-nums"],
+  },
+  editLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    minHeight: 40,
+  },
+  editLinkText: {
+    ...typography.label,
+    fontWeight: "700",
+    color: colors.routineLabel,
   },
   stepPlanned: {
     fontWeight: "500",
