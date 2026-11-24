@@ -1,7 +1,7 @@
 {
   "name": "flowstate",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "dependencies": {
     "@react-native-vector-icons/ionicons": "^13.1.2",
     "expo": "~56.0.9",

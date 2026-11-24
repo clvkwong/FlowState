@@ -2,7 +2,7 @@
   "expo": {
     "name": "FlowState",
     "slug": "flowstate",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "flowstate",
@@ -20,7 +20,7 @@
       },
       "package": "com.emergence.flowstate",
       "predictiveBackGestureEnabled": false,
-      "versionCode": 2
+      "versionCode": 3
     },
     "web": {
       "bundler": "metro",
