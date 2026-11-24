@@ -210,6 +210,24 @@ export default function HomeScreen() {
           </Text>
         </View>
         <View style={styles.headerActions}>
+          {habits.length > 1 ? (
+            <Pressable
+              onPress={() => router.push("/(app)/habit/reorder")}
+              accessibilityRole="button"
+              accessibilityLabel="Reorder habits"
+              style={({ pressed }) => [
+                styles.iconButton,
+                styles.accountButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons
+                name="swap-vertical"
+                size={22}
+                color={colors.textPrimary}
+              />
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() => setAccountOpen(true)}
             accessibilityRole="button"

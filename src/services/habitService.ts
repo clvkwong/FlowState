@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "@/services/firebase";
 import type {
@@ -57,6 +58,7 @@ function docToHabit(id: string, data: Record<string, unknown>): Habit {
     tasks: data.tasks as Habit["tasks"],
     days: readDays(data.days),
     timeOfDay: readTimeOfDay(data.timeOfDay),
+    order: typeof data.order === "number" ? data.order : undefined,
     createdAt:
       typeof createdAt === "object" && createdAt?.toDate
         ? createdAt.toDate().toISOString()
@@ -88,6 +90,7 @@ export async function createHabit(
   const days = normalizeDays(input.days);
   if (days) payload.days = days;
   if (input.timeOfDay) payload.timeOfDay = input.timeOfDay;
+  if (input.order !== undefined) payload.order = input.order;
 
   const ref = await addDoc(collection(db, "habits"), payload);
   return {
@@ -100,6 +103,7 @@ export async function createHabit(
     tasks: input.tasks,
     days,
     timeOfDay: input.timeOfDay,
+    order: input.order,
     createdAt: new Date().toISOString(),
   };
 }
@@ -118,6 +122,17 @@ export async function updateHabit(
     payload.days = normalizeDays(input.days) ?? deleteField();
   if (input.timeOfDay !== undefined) payload.timeOfDay = input.timeOfDay;
   await updateDoc(doc(db, "habits", habitId), payload);
+}
+
+/** Writes each habit's new `order` in one atomic batch. */
+export async function reorderHabits(
+  orders: { habitId: string; order: number }[],
+): Promise<void> {
+  const batch = writeBatch(db);
+  for (const { habitId, order } of orders) {
+    batch.update(doc(db, "habits", habitId), { order });
+  }
+  await batch.commit();
 }
 
 export async function deleteHabit(habitId: string): Promise<void> {

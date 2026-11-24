@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { compareHabits, nextHabitOrder } from "@/utils/habitLogic";
 import { normalizeDays } from "@/utils/schedule";
 import * as habitService from "@/services/habitService";
 import { getHabitPersistKey } from "@/storage/persistKeys";
@@ -17,6 +18,8 @@ interface HabitState {
   createHabit: (userId: string, input: CreateHabitInput) => Promise<Habit>;
   updateHabit: (habitId: string, input: UpdateHabitInput) => Promise<void>;
   deleteHabit: (userId: string, habitId: string) => Promise<void>;
+  /** Persists the given id sequence as the habits' display order. */
+  reorderHabits: (orderedIds: string[]) => Promise<void>;
   setHasHydrated: (value: boolean) => void;
   hydrateFromDB: (habits: Habit[]) => void;
 }
@@ -55,7 +58,10 @@ export const useHabitStore = create<HabitState>()(
       reset: () => set({ habits: [], _hasHydrated: false }),
       setHasHydrated: (value) => set({ _hasHydrated: value }),
       createHabit: async (userId, input) => {
-        const habit = await habitService.createHabit(userId, input);
+        const habit = await habitService.createHabit(userId, {
+          ...input,
+          order: nextHabitOrder(get().habits),
+        });
         get().addHabit(habit);
         return habit;
       },
@@ -73,6 +79,23 @@ export const useHabitStore = create<HabitState>()(
       deleteHabit: async (_userId, habitId) => {
         await habitService.deleteHabit(habitId);
         get().removeHabit(habitId);
+      },
+      reorderHabits: async (orderedIds) => {
+        const orders = orderedIds.map((habitId, order) => ({ habitId, order }));
+        const changed = orders.filter(
+          ({ habitId, order }) =>
+            get().habits.find((h) => h.id === habitId)?.order !== order,
+        );
+        if (changed.length === 0) return;
+        await habitService.reorderHabits(changed);
+        const byId = new Map(orders.map((o) => [o.habitId, o.order]));
+        set({
+          habits: get()
+            .habits.map((h) =>
+              byId.has(h.id) ? { ...h, order: byId.get(h.id) } : h,
+            )
+            .sort(compareHabits),
+        });
       },
       hydrateFromDB: (habits) => set({ habits, _hasHydrated: true }),
     }),

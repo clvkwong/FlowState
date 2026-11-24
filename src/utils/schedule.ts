@@ -117,8 +117,7 @@ export interface ScheduleView {
 /**
  * Groups the day's scheduled habits into time-of-day sections for the home
  * list. Sections run morning → evening → anytime; within a section incomplete
- * habits come first, then oldest-created first (see `compareHabits`), so the
- * order never depends on how the habits array happened to be assembled. 'anytime' habits are
+ * habits come first, then in the user's chosen order (see `compareHabits`). 'anytime' habits are
  * included under every filter since they fit any window.
  */
 export function buildScheduleView(
