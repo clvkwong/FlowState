@@ -25,6 +25,8 @@ export interface Habit {
   days?: Weekday[];
   /** Omitted on habits created before scheduling existed = 'anytime'. */
   timeOfDay?: TimeOfDay;
+  /** User-chosen position (ascending). Omitted on habits never reordered. */
+  order?: number;
   createdAt: string;
 }
 
@@ -36,6 +38,7 @@ export interface CreateHabitInput {
   tasks?: RoutineTask[];
   days?: Weekday[];
   timeOfDay?: TimeOfDay;
+  order?: number;
 }
 
 export interface UpdateHabitInput {
