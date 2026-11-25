@@ -368,6 +368,9 @@ export default function HomeScreen() {
                   onCountIncrement={handleCountIncrement}
                   onCountDecrement={handleCountDecrement}
                   onRoutinePress={handleRoutinePress}
+                  onPress={(habitId) =>
+                    router.push(`/(app)/habit/${habitId}`)
+                  }
                   onLongPress={setActionHabitId}
                   readOnly={!isToday}
                 />

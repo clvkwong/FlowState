@@ -22,7 +22,10 @@ interface RoutineHabitCardProps {
   habit: Habit;
   log?: HabitLog;
   logs: HabitLog[];
-  onPress: () => void;
+  /** The play button: starts the routine timer. */
+  onStart: () => void;
+  /** Tapping the card body (outside the play button) opens the view screen. */
+  onPress?: () => void;
   onLongPress?: () => void;
   /** View-only (another day is selected): the primary action is off. */
   readOnly?: boolean;
@@ -32,6 +35,7 @@ export function RoutineHabitCard({
   habit,
   log,
   logs,
+  onStart,
   onPress,
   onLongPress,
   readOnly = false,
@@ -49,14 +53,11 @@ export function RoutineHabitCard({
 
   return (
     <Pressable
-      onPress={readOnly ? undefined : onPress}
+      onPress={onPress}
       onLongPress={onLongPress}
       accessibilityRole="button"
-      accessibilityState={{ disabled: readOnly }}
-      accessibilityLabel={
-        completed ? `${habit.name}, completed. Run again` : `Start ${habit.name}`
-      }
-      accessibilityHint="Long press for more options"
+      accessibilityLabel={completed ? `${habit.name}, completed` : habit.name}
+      accessibilityHint="Opens habit details. Long press for more options"
       style={[
         styles.card,
         completed
@@ -74,8 +75,16 @@ export function RoutineHabitCard({
             <Text style={styles.sub}> · {meta}</Text>
           </Text>
         </View>
-        <View
-          style={[
+        <Pressable
+          onPress={onStart}
+          disabled={readOnly}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: readOnly }}
+          accessibilityLabel={
+            completed ? `Run ${habit.name} again` : `Start ${habit.name}`
+          }
+          hitSlop={8}
+          style={({ pressed }) => [
             styles.play,
             completed
               ? { borderColor: accent, backgroundColor: "transparent" }
@@ -85,6 +94,7 @@ export function RoutineHabitCard({
                   shadowColor: accent,
                 },
             readOnly && styles.readOnly,
+            pressed && styles.pressed,
           ]}
         >
           {completed ? (
@@ -97,7 +107,7 @@ export function RoutineHabitCard({
               style={styles.playIcon}
             />
           )}
-        </View>
+        </Pressable>
       </View>
       <HabitHeatMap habit={habit} logs={logs} />
     </Pressable>
@@ -149,6 +159,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.45,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
+  },
+  pressed: {
+    transform: [{ scale: 0.92 }],
   },
   playIcon: {
     marginLeft: 3,
