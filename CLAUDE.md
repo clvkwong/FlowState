@@ -119,7 +119,7 @@ One log per finished focus session (`focusSessions` collection). Written once, w
 ```
 
 - `completed` = the timer ran out or the user tapped Finish; `ended_early` = the user closed/ended the session before it ran out.
-- Abandoned in-progress sessions under 1 minute are discarded, not logged.
+- Sessions with under 1 minute of focused time are discarded, not logged (either status).
 
 ### Focus stats (`utils/focus.ts`)
 

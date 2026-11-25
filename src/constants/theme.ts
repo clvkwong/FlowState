@@ -22,6 +22,8 @@ export const colors = {
   afternoon: '#A8E63D',
   evening: '#A48BFF',
   anytime: '#00D4FF',
+  // Focus mode accent (stats, timer ring, sessions).
+  focus: '#FFB547',
 } as const;
 
 export const borderRadius = {
