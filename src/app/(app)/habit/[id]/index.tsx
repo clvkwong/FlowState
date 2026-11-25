@@ -48,7 +48,7 @@ const HISTORY_NOUN: Record<Habit["type"], [string, string]> = {
 };
 
 /** History entries revealed per page; "Show more" appends another page. */
-const HISTORY_PAGE_SIZE = 10;
+const HISTORY_PAGE_SIZE = 5;
 
 export default function HabitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
