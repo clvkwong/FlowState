@@ -20,6 +20,8 @@ interface CheckHabitCardProps {
   log?: HabitLog;
   logs: HabitLog[];
   onToggle: () => void;
+  /** Tapping the card body (outside the checkbox) opens the view screen. */
+  onPress?: () => void;
   onLongPress?: () => void;
   /** View-only (another day is selected): the primary action is off. */
   readOnly?: boolean;
@@ -30,6 +32,7 @@ export function CheckHabitCard({
   log,
   logs,
   onToggle,
+  onPress,
   onLongPress,
   readOnly = false,
 }: CheckHabitCardProps) {
@@ -37,7 +40,7 @@ export function CheckHabitCard({
   const accent = getHabitAccent("check");
   const pop = useRef(new Animated.Value(1)).current;
 
-  const handlePress = () => {
+  const handleToggle = () => {
     Animated.sequence([
       Animated.timing(pop, {
         toValue: 1.15,
@@ -51,12 +54,11 @@ export function CheckHabitCard({
 
   return (
     <Pressable
-      onPress={readOnly ? undefined : handlePress}
+      onPress={onPress}
       onLongPress={onLongPress}
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked: completed, disabled: readOnly }}
+      accessibilityRole="button"
       accessibilityLabel={habit.name}
-      accessibilityHint="Long press for more options"
+      accessibilityHint="Opens habit details. Long press for more options"
       style={[
         styles.card,
         completed
@@ -71,21 +73,30 @@ export function CheckHabitCard({
           </Text>
           <Text style={[styles.type, { color: accent }]}>CHECK</Text>
         </View>
-        <Animated.View
-          style={[
-            styles.check,
-            { borderColor: accent },
-            completed && { backgroundColor: accent },
-            readOnly && styles.readOnly,
-            { transform: [{ scale: pop }] },
-          ]}
+        <Pressable
+          onPress={handleToggle}
+          disabled={readOnly}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: completed, disabled: readOnly }}
+          accessibilityLabel={`Mark ${habit.name} ${completed ? "not done" : "done"}`}
+          hitSlop={8}
         >
-          <Ionicons
-            name="checkmark"
-            size={32}
-            color={completed ? colors.background : withOpacity(accent, 0.28)}
-          />
-        </Animated.View>
+          <Animated.View
+            style={[
+              styles.check,
+              { borderColor: accent },
+              completed && { backgroundColor: accent },
+              readOnly && styles.readOnly,
+              { transform: [{ scale: pop }] },
+            ]}
+          >
+            <Ionicons
+              name="checkmark"
+              size={32}
+              color={completed ? colors.background : withOpacity(accent, 0.28)}
+            />
+          </Animated.View>
+        </Pressable>
       </View>
       <HabitHeatMap habit={habit} logs={logs} />
     </Pressable>

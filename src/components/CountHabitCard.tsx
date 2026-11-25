@@ -22,6 +22,8 @@ interface CountHabitCardProps {
   logs: HabitLog[];
   onIncrement: () => void;
   onDecrement: () => void;
+  /** Tapping the card body (outside the −/+ buttons) opens the view screen. */
+  onPress?: () => void;
   onLongPress?: () => void;
   /** View-only (another day is selected): the primary action is off. */
   readOnly?: boolean;
@@ -33,6 +35,7 @@ export function CountHabitCard({
   logs,
   onIncrement,
   onDecrement,
+  onPress,
   onLongPress,
   readOnly = false,
 }: CountHabitCardProps) {
@@ -77,9 +80,11 @@ export function CountHabitCard({
 
   return (
     <Pressable
+      onPress={onPress}
       onLongPress={onLongPress}
+      accessibilityRole="button"
       accessibilityLabel={habit.name}
-      accessibilityHint="Long press for more options"
+      accessibilityHint="Opens habit details. Long press for more options"
       style={[
         styles.card,
         completed

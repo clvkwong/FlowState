@@ -153,6 +153,7 @@ Bold, high-energy, gamified. Inspired by Streaks and Duolingo — reward complet
 - Habit card: the core UI unit — must feel chunky, tappable, and visually distinct per type.
   - Layout: name + type label on the left, the primary action on the right (check: 60px checkbox; count: −/+ buttons; routine: round play button). 21-day history strip along the bottom.
   - Count habits always offer − next to + so a mistaken press can be undone (never below 0).
+  - Tapping the action control (checkbox, −/+, play) fires the habit action; tapping anywhere else on the card opens the View screen (`habit/[id]`), including on view-only days.
   - Edit / View / Delete live behind gestures, not buttons on the card: long-press opens an action sheet, swipe left reveals the same three actions.
 - Progress bar for count habits (fill animates, value shown at its end).
 - Account button in the home header opens a sheet with the signed-in email and Sign out.
