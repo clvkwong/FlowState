@@ -14,6 +14,11 @@ import {
   clearLogStorePersist,
 } from "@/stores/logStore";
 import {
+  clearFocusStorePersist,
+  rehydrateFocusStore,
+  useFocusStore,
+} from "@/stores/focusStore";
+import {
   clearRoutineSessionStorePersist,
   rehydrateRoutineSessionStore,
   useRoutineSessionStore,
@@ -41,15 +46,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setLoading: (isLoading) => set({ isLoading }),
   setAuthReady: (isAuthReady) => set({ isAuthReady }),
   hydrateFromFirestore: async (userId) => {
-    const { habits, logs } = await hydrateUserData(userId);
+    const { habits, logs, focusSessions } = await hydrateUserData(userId);
     useHabitStore.getState().hydrateFromDB(habits);
     useLogStore.getState().hydrateFromDB(logs);
+    useFocusStore.getState().hydrateFromDB(focusSessions);
   },
   restoreFromMMKV: async () => {
     await Promise.all([
       rehydrateHabitStore(),
       rehydrateLogStore(),
       rehydrateRoutineSessionStore(),
+      rehydrateFocusStore(),
     ]);
   },
   signIn: async (email, password) => {
@@ -63,6 +70,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     useHabitStore.getState().reset();
     useLogStore.getState().reset();
     useRoutineSessionStore.getState().reset();
+    useFocusStore.getState().reset();
   },
   signOut: async () => {
     const userId = get().user?.uid;
@@ -70,10 +78,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     useHabitStore.getState().reset();
     useLogStore.getState().reset();
     useRoutineSessionStore.getState().reset();
+    useFocusStore.getState().reset();
     if (userId) {
       clearHabitStorePersist();
       clearLogStorePersist();
       clearRoutineSessionStorePersist();
+      clearFocusStorePersist();
     }
     set({ user: null, isAuthReady: false });
   },

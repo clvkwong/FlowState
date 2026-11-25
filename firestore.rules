@@ -19,5 +19,14 @@ service cloud.firestore {
       allow update, delete: if request.auth != null
         && resource.data.userId == request.auth.uid;
     }
+
+    // Focus sessions are written once when a session ends and never edited.
+    match /focusSessions/{sessionId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
   }
 }
