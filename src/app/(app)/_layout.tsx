@@ -26,6 +26,7 @@ export default function AppLayout() {
         name="routine/[habitId]"
         options={{ title: '', headerShown: false, presentation: 'fullScreenModal' }}
       />
+      <Stack.Screen name="focus/new" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen
         name="focus/[sessionId]"
         options={{ title: '', headerShown: false, presentation: 'fullScreenModal' }}
