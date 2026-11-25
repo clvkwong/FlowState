@@ -47,6 +47,9 @@ const HISTORY_NOUN: Record<Habit["type"], [string, string]> = {
   routine: ["session", "sessions"],
 };
 
+/** History entries revealed per page; "Show more" appends another page. */
+const HISTORY_PAGE_SIZE = 10;
+
 export default function HabitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -55,12 +58,18 @@ export default function HabitDetailScreen() {
   const user = useAuthStore((s) => s.user);
   const [logEditor, setLogEditor] = useState<LogEditorTarget | null>(null);
   const { confirmDelete: confirmDeleteHabit, deletingId } = useDeleteHabit();
+  const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
 
   const today = todayString();
   const history = useMemo(
     () => (habit ? getHabitHistory(habit, logs) : []),
     [habit, logs],
   );
+  const visibleHistory = useMemo(
+    () => history.slice(0, visibleCount),
+    [history, visibleCount],
+  );
+  const remaining = history.length - visibleHistory.length;
 
   if (!habit) {
     return (
@@ -143,7 +152,7 @@ export default function HabitDetailScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <FlatList
-        data={history}
+        data={visibleHistory}
         keyExtractor={(log) => log.id}
         contentContainerStyle={styles.list}
         ListHeaderComponent={header}
@@ -160,24 +169,43 @@ export default function HabitDetailScreen() {
           <View style={[styles.empty, { borderColor: accent }]}>
             <Text style={styles.emptyTitle}>Nothing logged yet</Text>
             <Text style={styles.emptyBody}>
-              Complete this habit and your sessions will stack up here.
-              Missed logging a day? Tap “Log a day” to add it.
+              Complete this habit and your sessions will stack up here. Missed
+              logging a day? Tap “Log a day” to add it.
             </Text>
           </View>
         }
         ListFooterComponent={
-          <Pressable
-            onPress={confirmDelete}
-            disabled={deleting}
-            style={styles.delete}
-            accessibilityRole="button"
-          >
-            {deleting ? (
-              <ActivityIndicator color={colors.danger} />
-            ) : (
-              <Text style={styles.deleteText}>Delete habit</Text>
-            )}
-          </Pressable>
+          <View>
+            {remaining > 0 ? (
+              <Pressable
+                onPress={() => setVisibleCount((n) => n + HISTORY_PAGE_SIZE)}
+                style={({ pressed }) => [
+                  styles.showMore,
+                  { borderColor: accent },
+                  pressed && styles.logDayPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Show ${Math.min(remaining, HISTORY_PAGE_SIZE)} more`}
+              >
+                <Text style={[styles.logDayText, { color: accent }]}>
+                  Show more
+                </Text>
+                <Text style={styles.showMoreMeta}>{remaining} older</Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              onPress={confirmDelete}
+              disabled={deleting}
+              style={styles.delete}
+              accessibilityRole="button"
+            >
+              {deleting ? (
+                <ActivityIndicator color={colors.danger} />
+              ) : (
+                <Text style={styles.deleteText}>Delete habit</Text>
+              )}
+            </Pressable>
+          </View>
         }
       />
 
@@ -528,6 +556,21 @@ const styles = StyleSheet.create({
   },
   historyGap: {
     height: 10,
+  },
+  showMore: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 48,
+    marginTop: 12,
+    borderRadius: borderRadius.pill,
+    borderWidth: 2,
+  },
+  showMoreMeta: {
+    ...typography.label,
+    fontWeight: "500",
+    color: colors.textSecondary,
   },
   empty: {
     backgroundColor: colors.surface,
