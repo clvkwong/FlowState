@@ -7,7 +7,7 @@ export interface FocusSession {
   task: string;
   /** Omitted when empty. Max 200 chars. */
   description?: string;
-  /** Timer value chosen at start, including any +5 min extensions. */
+  /** Timer value chosen at start. Fixed for the session (it runs into overtime instead). */
   plannedDurationSeconds: number;
   /** Time actually focused, excluding paused time. Includes any overtime. */
   actualDurationSeconds: number;

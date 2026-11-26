@@ -139,23 +139,6 @@ export function resumeFocusSession(
   };
 }
 
-/** Adds 5 minutes to the planned time, up to the 180 minute cap. */
-export function extendFocusSession(
-  session: ActiveFocusSession,
-): ActiveFocusSession {
-  return {
-    ...session,
-    plannedDurationSeconds: Math.min(
-      FOCUS_MAX_MINUTES * 60,
-      session.plannedDurationSeconds + FOCUS_STEP_MINUTES * 60,
-    ),
-  };
-}
-
-export function canExtendFocusSession(session: ActiveFocusSession): boolean {
-  return session.plannedDurationSeconds < FOCUS_MAX_MINUTES * 60;
-}
-
 /**
  * The log to write when the user finishes. Every finished session is logged,
  * however short. Actual time includes any overtime. Status is `completed`
