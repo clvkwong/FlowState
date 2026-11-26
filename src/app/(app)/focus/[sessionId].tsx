@@ -11,7 +11,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
-import { borderRadius, colors, spacing } from "@/constants/theme";
+import { borderRadius, colors, spacing, withOpacity } from "@/constants/theme";
 import { Button } from "@/components/Button";
 import { FocusCompleteView } from "@/components/FocusCompleteView";
 import { FocusTimerRing } from "@/components/FocusTimerRing";
@@ -270,10 +270,21 @@ export default function FocusTimerScreen() {
         ) : null}
       </View>
 
-      <View style={styles.footer}>
-        <Ionicons name="flame" size={22} color={colors.focus} />
+      <View style={[styles.footer, overtime && styles.footerOvertime]}>
+        <Ionicons
+          name={overtime ? "checkmark" : "flame"}
+          size={22}
+          color={overtime ? colors.check : colors.focus}
+        />
         <Text style={styles.footerText}>
-          {stats.streak > 0 ? (
+          {overtime ? (
+            <>
+              Planned time done. Overtime counts too —{" "}
+              <Text style={styles.footerStrongOvertime}>
+                finish when you're ready.
+              </Text>
+            </>
+          ) : stats.streak > 0 ? (
             <>
               <Text style={styles.footerStrong}>
                 {stats.streak}-day streak
@@ -486,6 +497,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     lineHeight: 19,
     color: colors.textPrimary,
+  },
+  footerOvertime: {
+    backgroundColor: withOpacity(colors.check, 0.15),
+  },
+  footerStrongOvertime: {
+    fontWeight: "900",
+    color: colors.check,
   },
   footerStrong: {
     fontWeight: "900",
