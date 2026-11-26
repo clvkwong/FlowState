@@ -123,7 +123,7 @@ One log per finished focus session (`focusSessions` collection). Written once, w
 
 ### Focus stats (`utils/focus.ts`)
 
-- **Focus streak**: consecutive days (local date of `startedAt`) with ≥1 `completed` session, ending today — or yesterday if today has none yet. Also track best streak.
+- **Focus streak**: consecutive days (local date of `startedAt`) with ≥1 logged session (`completed` or `ended_early` — ending early is never penalized), ending today — or yesterday if today has none yet. Also track best streak.
 - **Last 7 days total**: sum of `actualDurationSeconds` over today and the previous 6 days. Sessions ended early add only the time actually focused.
 - Session count and per-day minutes (bar chart) over the same 7 days.
 
