@@ -25,6 +25,8 @@ export function FocusCompleteView({
   onAnotherRound,
 }: FocusCompleteViewProps) {
   const pop = useRef(new Animated.Value(0)).current;
+  const overtimeSeconds =
+    session.actualDurationSeconds - session.plannedDurationSeconds;
 
   useEffect(() => {
     Animated.spring(pop, {
@@ -55,6 +57,11 @@ export function FocusCompleteView({
           </Text>{" "}
           on {session.task}
         </Text>
+        {overtimeSeconds >= 60 ? (
+          <Text style={styles.overtime}>
+            +{formatFocusMinutes(overtimeSeconds)} overtime
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.stats}>
@@ -168,6 +175,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.textSecondary,
     textAlign: "center",
+  },
+  overtime: {
+    fontSize: 14,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+    color: colors.check,
   },
   subtitleStrong: {
     fontWeight: "900",

@@ -23,13 +23,21 @@ interface FocusTimerRingProps {
   paused: boolean;
 }
 
-/** Focus-amber ring that empties as the session's time runs down. */
+/**
+ * Focus-amber ring that empties as the session's time runs down. Past the
+ * planned time it fills back up in check green and counts overtime upward.
+ */
 export function FocusTimerRing({
   remainingSeconds,
   plannedSeconds,
   paused,
 }: FocusTimerRingProps) {
-  const ratio = plannedSeconds > 0 ? remainingSeconds / plannedSeconds : 0;
+  const overtime = remainingSeconds < 0;
+  const ratio = overtime
+    ? 1
+    : plannedSeconds > 0
+      ? remainingSeconds / plannedSeconds
+      : 0;
   const fill = useSharedValue(ratio);
 
   useEffect(() => {
@@ -40,15 +48,22 @@ export function FocusTimerRing({
     strokeDashoffset: CIRCUMFERENCE * (1 - fill.value),
   }));
 
-  const display = formatDuration(remainingSeconds);
+  const display = overtime
+    ? `+${formatDuration(-remainingSeconds)}`
+    : formatDuration(remainingSeconds);
   const planned = formatDuration(plannedSeconds);
+  const accent = overtime ? colors.check : colors.focus;
 
   return (
     <View
       style={styles.container}
       accessible
       accessibilityRole="timer"
-      accessibilityLabel={`${display} left of ${planned}${paused ? ", paused" : ""}`}
+      accessibilityLabel={`${
+        overtime
+          ? `${formatDuration(-remainingSeconds)} over the planned ${planned}`
+          : `${display} left of ${planned}`
+      }${paused ? ", paused" : ""}`}
     >
       <Svg width={SIZE} height={SIZE} style={StyleSheet.absoluteFill}>
         <Circle
@@ -63,7 +78,7 @@ export function FocusTimerRing({
           cx={SIZE / 2}
           cy={SIZE / 2}
           r={RADIUS}
-          stroke={colors.focus}
+          stroke={accent}
           strokeOpacity={paused ? 0.45 : 1}
           strokeWidth={STROKE}
           fill="none"
@@ -75,8 +90,8 @@ export function FocusTimerRing({
         />
       </Svg>
       <Text style={[styles.time, paused && styles.timePaused]}>{display}</Text>
-      <Text style={styles.caption}>
-        {paused ? "PAUSED" : `OF ${planned}`}
+      <Text style={[styles.caption, { color: accent }]}>
+        {paused ? "PAUSED" : overtime ? `OVER ${planned}` : `OF ${planned}`}
       </Text>
     </View>
   );

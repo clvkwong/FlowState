@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  BackHandler,
   Pressable,
   StyleSheet,
   Text,
@@ -18,11 +17,13 @@ import { FocusCompleteView } from "@/components/FocusCompleteView";
 import { FocusTimerRing } from "@/components/FocusTimerRing";
 import { useAuthStore } from "@/stores/authStore";
 import { useFocusStore } from "@/stores/focusStore";
-import type { FocusSession, FocusSessionStatus } from "@/types/focus";
+import type { FocusSession } from "@/types/focus";
 import { todayString } from "@/utils/date";
 import {
   canExtendFocusSession,
   countFocusSessionsOnDate,
+  FOCUS_MIN_LOGGED_SECONDS,
+  getFocusElapsedSeconds,
   getFocusRemainingSeconds,
   getFocusStreak,
   getFocusWeekStats,
@@ -43,9 +44,8 @@ export default function FocusTimerScreen() {
 
   const [now, setNow] = useState(() => Date.now());
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<FocusSessionStatus | null>(null);
+  const [saveError, setSaveError] = useState(false);
   const [finished, setFinished] = useState<FocusSession | null>(null);
-  const autoEnded = useRef(false);
 
   // Tick while running. Time is derived from timestamps, so it stays right
   // across backgrounding and app restarts.
@@ -56,67 +56,48 @@ export default function FocusTimerScreen() {
     return () => clearInterval(timer);
   }, [session, paused]);
 
+  // Negative once past the planned time: the timer runs on into overtime
+  // and only the Finish button ends the session.
   const remaining = session ? getFocusRemainingSeconds(session, now) : 0;
+  const overtime = remaining < 0;
 
   const close = useCallback(() => {
     if (router.canGoBack()) router.back();
     else router.replace("/(app)/(tabs)/focus");
   }, [router]);
 
-  const finish = useCallback(
-    async (status: FocusSessionStatus) => {
-      if (!user || saving) return;
-      setSaving(true);
-      setSaveError(null);
-      try {
-        const logged = await endSession(user.uid, status);
-        // Every logged session gets the celebration, ended early or not.
-        if (logged) setFinished(logged);
-        else close(); // under a minute: nothing was logged
-      } catch {
-        setSaveError(status);
-      } finally {
-        setSaving(false);
-      }
-    },
-    [user, saving, endSession, close],
-  );
-
-  // Time's up: log it as completed (once).
-  useEffect(() => {
-    if (session && !paused && remaining === 0 && !autoEnded.current) {
-      autoEnded.current = true;
-      void finish("completed");
+  const save = useCallback(async () => {
+    if (!user || saving) return;
+    setSaving(true);
+    setSaveError(false);
+    try {
+      const logged = await endSession(user.uid);
+      // Every logged session gets the celebration, early or not.
+      if (logged) setFinished(logged);
+      else close(); // under a minute: nothing was logged
+    } catch {
+      setSaveError(true);
+    } finally {
+      setSaving(false);
     }
-  }, [session, paused, remaining, finish]);
+  }, [user, saving, endSession, close]);
 
-  const confirmEndEarly = useCallback(() => {
-    if (!session) {
-      close();
-      return true;
+  // The only way a session ends. Status comes from elapsed vs planned time.
+  const handleFinish = useCallback(() => {
+    if (!session) return;
+    if (getFocusElapsedSeconds(session) < FOCUS_MIN_LOGGED_SECONDS) {
+      Alert.alert(
+        "Too short to save",
+        "Sessions under a minute aren't logged. Finish anyway?",
+        [
+          { text: "Keep going", style: "cancel" },
+          { text: "Finish", onPress: () => void save() },
+        ],
+      );
+      return;
     }
-    Alert.alert(
-      "Finish early?",
-      "Done with this task? The time you've focused counts toward your streak and 7-day total.",
-      [
-        { text: "Keep going", style: "cancel" },
-        {
-          text: "Finish early",
-          onPress: () => void finish("ended_early"),
-        },
-      ],
-    );
-    return true;
-  }, [session, close, finish]);
-
-  useEffect(() => {
-    if (finished) return;
-    const sub = BackHandler.addEventListener(
-      "hardwareBackPress",
-      confirmEndEarly,
-    );
-    return () => sub.remove();
-  }, [confirmEndEarly, finished]);
+    void save();
+  }, [session, save]);
 
   const today = todayString();
   const stats = useMemo(
@@ -175,18 +156,32 @@ export default function FocusTimerScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
+        {/* Closing only leaves the screen; the session keeps running and the
+            Focus tab shows a Resume banner. */}
         <Pressable
-          onPress={confirmEndEarly}
+          onPress={close}
           accessibilityRole="button"
-          accessibilityLabel="Finish early"
+          accessibilityLabel="Close, session keeps running"
           style={({ pressed }) => [styles.close, pressed && styles.pressed]}
         >
           <Ionicons name="close" size={20} color={colors.textPrimary} />
         </Pressable>
         <View style={styles.status}>
-          <View style={[styles.statusDot, paused && styles.statusDotPaused]} />
-          <Text style={[styles.statusText, paused && styles.statusTextPaused]}>
-            {paused ? "PAUSED" : "FOCUSING"}
+          <View
+            style={[
+              styles.statusDot,
+              overtime && styles.statusDotOvertime,
+              paused && styles.statusDotPaused,
+            ]}
+          />
+          <Text
+            style={[
+              styles.statusText,
+              overtime && styles.statusTextOvertime,
+              paused && styles.statusTextPaused,
+            ]}
+          >
+            {paused ? "PAUSED" : overtime ? "OVERTIME" : "FOCUSING"}
           </Text>
         </View>
         <View style={styles.close} />
@@ -238,19 +233,8 @@ export default function FocusTimerScreen() {
             />
           </Pressable>
 
-          <Pressable
-            onPress={() => void finish("completed")}
-            disabled={saving}
-            accessibilityRole="button"
-            accessibilityLabel="Finish now"
-            style={({ pressed }) => [styles.sideButton, pressed && styles.pressed]}
-          >
-            {saving ? (
-              <ActivityIndicator color={colors.check} />
-            ) : (
-              <Ionicons name="checkmark" size={26} color={colors.check} />
-            )}
-          </Pressable>
+          {/* Balances the +5 button so pause/resume stays centred. */}
+          <View style={styles.sideSpacer} />
         </View>
 
         {saveError ? (
@@ -261,7 +245,7 @@ export default function FocusTimerScreen() {
             <Button
               title="Try again"
               variant="ghost"
-              onPress={() => void finish(saveError)}
+              onPress={() => void save()}
             />
           </View>
         ) : null}
@@ -282,6 +266,26 @@ export default function FocusTimerScreen() {
           )}
         </Text>
       </View>
+
+      <Pressable
+        onPress={handleFinish}
+        disabled={saving}
+        accessibilityRole="button"
+        style={({ pressed }) => [
+          styles.finish,
+          pressed && styles.finishPressed,
+          saving && styles.disabled,
+        ]}
+      >
+        {saving ? (
+          <ActivityIndicator color={colors.textPrimary} />
+        ) : (
+          <>
+            <Ionicons name="checkmark" size={24} color={colors.textPrimary} />
+            <Text style={styles.finishText}>Finish session</Text>
+          </>
+        )}
+      </Pressable>
     </SafeAreaView>
   );
 }
@@ -332,6 +336,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },
   },
+  statusDotOvertime: {
+    backgroundColor: colors.check,
+    shadowColor: colors.check,
+  },
+  statusTextOvertime: {
+    color: colors.check,
+  },
   statusDotPaused: {
     backgroundColor: colors.textSecondary,
   },
@@ -381,6 +392,34 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
+  },
+  sideSpacer: {
+    width: 64,
+    height: 64,
+  },
+  finish: {
+    marginTop: spacing.md,
+    height: 62,
+    borderRadius: borderRadius.pill,
+    backgroundColor: colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  finishPressed: {
+    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
+  },
+  finishText: {
+    fontSize: 19,
+    fontWeight: "900",
+    color: colors.textPrimary,
   },
   plusFive: {
     fontSize: 17,
