@@ -9,7 +9,7 @@ export interface FocusSession {
   description?: string;
   /** Timer value chosen at start, including any +5 min extensions. */
   plannedDurationSeconds: number;
-  /** Time actually focused, excluding paused time. Never above planned. */
+  /** Time actually focused, excluding paused time. Includes any overtime. */
   actualDurationSeconds: number;
   status: FocusSessionStatus;
   /** ISO string locally; a Firestore Timestamp in the database. */
