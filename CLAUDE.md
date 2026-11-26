@@ -110,7 +110,7 @@ One log per finished focus session (`focusSessions` collection). Written once, w
   userId: string
   task: string                   // required, the one-off task name
   description?: string           // optional, max 200 chars; omitted when empty
-  plannedDurationSeconds: number // timer value chosen at start (+5 min extensions included); 5–180 min
+  plannedDurationSeconds: number // timer value chosen at start, never changed mid-session; 5–180 min
   actualDurationSeconds: number  // time actually focused (excludes paused time; includes overtime)
   status: 'completed' | 'ended_early'
   startedAt: Timestamp
