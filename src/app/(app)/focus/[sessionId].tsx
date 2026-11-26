@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -13,6 +12,7 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 
 import { borderRadius, colors, spacing, withOpacity } from "@/constants/theme";
 import { Button } from "@/components/Button";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FocusCompleteView } from "@/components/FocusCompleteView";
 import { FocusTimerRing } from "@/components/FocusTimerRing";
 import { useAuthStore } from "@/stores/authStore";
@@ -20,7 +20,6 @@ import { useFocusStore } from "@/stores/focusStore";
 import type { FocusSession } from "@/types/focus";
 import { todayString } from "@/utils/date";
 import {
-  canExtendFocusSession,
   countFocusSessionsOnDate,
   getFocusRemainingSeconds,
   getFocusStreak,
@@ -37,7 +36,6 @@ export default function FocusTimerScreen() {
   const {
     pauseSession,
     resumeSession,
-    extendSession,
     endSession,
     discardActiveSession,
   } = useFocusStore.getState();
@@ -49,6 +47,7 @@ export default function FocusTimerScreen() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [finished, setFinished] = useState<FocusSession | null>(null);
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
 
   // Tick while running. Time is derived from timestamps, so it stays right
   // across backgrounding and app restarts.
@@ -87,21 +86,9 @@ export default function FocusTimerScreen() {
 
   // Throws the session away: nothing is saved and stats are untouched.
   const handleDiscard = useCallback(() => {
-    Alert.alert(
-      "Discard session?",
-      "It won't be saved and won't count toward your streak or 7-day total.",
-      [
-        { text: "Keep going", style: "cancel" },
-        {
-          text: "Discard",
-          style: "destructive",
-          onPress: () => {
-            discardActiveSession();
-            close();
-          },
-        },
-      ],
-    );
+    setConfirmingDiscard(false);
+    discardActiveSession();
+    close();
   }, [discardActiveSession, close]);
 
   // The only way a session is saved. Status comes from elapsed vs planned time.
@@ -195,7 +182,7 @@ export default function FocusTimerScreen() {
           </Text>
         </View>
         <Pressable
-          onPress={handleDiscard}
+          onPress={() => setConfirmingDiscard(true)}
           disabled={saving}
           accessibilityRole="button"
           accessibilityLabel="Discard session"
@@ -222,20 +209,6 @@ export default function FocusTimerScreen() {
 
         <View style={styles.controls}>
           <Pressable
-            onPress={extendSession}
-            disabled={!canExtendFocusSession(session) || saving}
-            accessibilityRole="button"
-            accessibilityLabel="Add 5 minutes"
-            style={({ pressed }) => [
-              styles.sideButton,
-              pressed && styles.pressed,
-              !canExtendFocusSession(session) && styles.disabled,
-            ]}
-          >
-            <Text style={styles.plusFive}>+5</Text>
-          </Pressable>
-
-          <Pressable
             onPress={paused ? resumeSession : pauseSession}
             disabled={saving}
             accessibilityRole="button"
@@ -251,9 +224,6 @@ export default function FocusTimerScreen() {
               color={colors.background}
             />
           </Pressable>
-
-          {/* Balances the +5 button so pause/resume stays centred. */}
-          <View style={styles.sideSpacer} />
         </View>
 
         {saveError ? (
@@ -316,6 +286,18 @@ export default function FocusTimerScreen() {
           </>
         )}
       </Pressable>
+
+      <ConfirmDialog
+        visible={confirmingDiscard}
+        icon="trash-outline"
+        tone="danger"
+        title="Discard session?"
+        message="It won't be saved and won't count toward your streak or 7-day total."
+        cancelLabel="Keep going"
+        confirmLabel="Discard"
+        onCancel={() => setConfirmingDiscard(false)}
+        onConfirm={handleDiscard}
+      />
     </SafeAreaView>
   );
 }
@@ -415,18 +397,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 28,
   },
-  sideButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sideSpacer: {
-    width: 64,
-    height: 64,
-  },
   finish: {
     marginTop: spacing.md,
     height: 62,
@@ -448,11 +418,6 @@ const styles = StyleSheet.create({
   },
   finishText: {
     fontSize: 19,
-    fontWeight: "900",
-    color: colors.textPrimary,
-  },
-  plusFive: {
-    fontSize: 17,
     fontWeight: "900",
     color: colors.textPrimary,
   },
