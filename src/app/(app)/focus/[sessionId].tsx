@@ -70,8 +70,9 @@ export default function FocusTimerScreen() {
       setSaveError(null);
       try {
         const logged = await endSession(user.uid, status);
-        if (logged && status === "completed") setFinished(logged);
-        else close(); // ended early, or too short to log
+        // Every logged session gets the celebration, ended early or not.
+        if (logged) setFinished(logged);
+        else close(); // under a minute: nothing was logged
       } catch {
         setSaveError(status);
       } finally {
@@ -95,13 +96,12 @@ export default function FocusTimerScreen() {
       return true;
     }
     Alert.alert(
-      "End session early?",
-      "The time you've focused so far still counts toward your 7-day total.",
+      "Finish early?",
+      "Done with this task? The time you've focused counts toward your streak and 7-day total.",
       [
         { text: "Keep going", style: "cancel" },
         {
-          text: "End session",
-          style: "destructive",
+          text: "Finish early",
           onPress: () => void finish("ended_early"),
         },
       ],
@@ -178,7 +178,7 @@ export default function FocusTimerScreen() {
         <Pressable
           onPress={confirmEndEarly}
           accessibilityRole="button"
-          accessibilityLabel="End session"
+          accessibilityLabel="Finish early"
           style={({ pressed }) => [styles.close, pressed && styles.pressed]}
         >
           <Ionicons name="close" size={20} color={colors.textPrimary} />

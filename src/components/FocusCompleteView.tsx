@@ -47,7 +47,7 @@ export function FocusCompleteView({
 
       <View style={styles.copy}>
         <Text style={styles.title} accessibilityRole="header">
-          Focus complete!
+          {session.status === "completed" ? "Focus complete!" : "Finished early!"}
         </Text>
         <Text style={styles.subtitle}>
           <Text style={styles.subtitleStrong}>
