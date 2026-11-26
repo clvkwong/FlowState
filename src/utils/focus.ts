@@ -19,8 +19,6 @@ export const FOCUS_STEP_MINUTES = 5;
 export const FOCUS_PRESET_MINUTES = [15, 25, 45, 60] as const;
 export const FOCUS_DEFAULT_MINUTES = 25;
 export const FOCUS_DESCRIPTION_MAX = 200;
-/** Sessions with less focused time than this are discarded, not logged. */
-export const FOCUS_MIN_LOGGED_SECONDS = 60;
 
 // ---------------------------------------------------------------------------
 // Draft / validation
@@ -159,17 +157,16 @@ export function canExtendFocusSession(session: ActiveFocusSession): boolean {
 }
 
 /**
- * The log to write when the user finishes, or null when it is too short to
- * keep. Actual time includes any overtime. Status is `completed` once the
- * planned time was reached, `ended_early` before that.
+ * The log to write when the user finishes. Every finished session is logged,
+ * however short. Actual time includes any overtime. Status is `completed`
+ * once the planned time was reached, `ended_early` before that.
  */
 export function buildFocusSessionResult(
   session: ActiveFocusSession,
   userId: string,
   now = Date.now(),
-): CreateFocusSessionInput | null {
+): CreateFocusSessionInput {
   const actual = getFocusElapsedSeconds(session, now);
-  if (actual < FOCUS_MIN_LOGGED_SECONDS) return null;
   const status = getFocusResultStatus(session, now);
   return {
     userId,
