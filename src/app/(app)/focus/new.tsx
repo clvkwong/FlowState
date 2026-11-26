@@ -66,18 +66,18 @@ export default function NewFocusSessionScreen() {
       return;
     }
     Alert.alert(
-      "End current session?",
-      `"${activeSession.task}" is still in progress. It will be logged as ended early.`,
+      "Finish current session?",
+      `"${activeSession.task}" is still in progress. It will be finished and logged first.`,
       [
         { text: "Keep it", style: "cancel" },
         {
-          text: "End and start",
+          text: "Finish and start",
           style: "destructive",
           onPress: async () => {
             if (!user) return;
             setStarting(true);
             try {
-              await endSession(user.uid, "ended_early");
+              await endSession(user.uid);
               begin();
             } catch {
               setError("Couldn't save the current session. Try again.");
