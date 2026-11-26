@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -22,8 +21,6 @@ import { todayString } from "@/utils/date";
 import {
   canExtendFocusSession,
   countFocusSessionsOnDate,
-  FOCUS_MIN_LOGGED_SECONDS,
-  getFocusElapsedSeconds,
   getFocusRemainingSeconds,
   getFocusStreak,
   getFocusWeekStats,
@@ -72,9 +69,9 @@ export default function FocusTimerScreen() {
     setSaveError(false);
     try {
       const logged = await endSession(user.uid);
-      // Every logged session gets the celebration, early or not.
+      // Every finished session is logged and gets the celebration.
       if (logged) setFinished(logged);
-      else close(); // under a minute: nothing was logged
+      else close(); // no active session (already finished elsewhere)
     } catch {
       setSaveError(true);
     } finally {
@@ -84,19 +81,7 @@ export default function FocusTimerScreen() {
 
   // The only way a session ends. Status comes from elapsed vs planned time.
   const handleFinish = useCallback(() => {
-    if (!session) return;
-    if (getFocusElapsedSeconds(session) < FOCUS_MIN_LOGGED_SECONDS) {
-      Alert.alert(
-        "Too short to save",
-        "Sessions under a minute aren't logged. Finish anyway?",
-        [
-          { text: "Keep going", style: "cancel" },
-          { text: "Finish", onPress: () => void save() },
-        ],
-      );
-      return;
-    }
-    void save();
+    if (session) void save();
   }, [session, save]);
 
   const today = todayString();
