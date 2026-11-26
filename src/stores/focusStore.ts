@@ -32,9 +32,9 @@ interface FocusState {
   extendSession: () => void;
   /**
    * Finishes the active session (status from elapsed vs planned time):
-   * writes the log to Firestore, then adds it
-   * locally. Returns null (and writes nothing) for a session under 1 minute.
-   * On a failed write the session stays active so the user can retry.
+   * writes the log to Firestore, then adds it locally. Returns null only
+   * when no session is active. On a failed write the session stays active
+   * so the user can retry.
    */
   endSession: (userId: string) => Promise<FocusSession | null>;
   /** Drops the active session without logging it. */
@@ -87,10 +87,6 @@ export const useFocusStore = create<FocusState>()(
         const { activeSession } = get();
         if (!activeSession) return null;
         const result = buildFocusSessionResult(activeSession, userId);
-        if (!result) {
-          set({ activeSession: null });
-          return null;
-        }
         const session = await focusService.createFocusSession(result);
         set({ sessions: [...get().sessions, session], activeSession: null });
         return session;

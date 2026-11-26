@@ -120,7 +120,7 @@ One log per finished focus session (`focusSessions` collection). Written once, w
 
 - A session only ends when the user taps the Finish CTA. The timer never auto-ends: past the planned time it keeps counting into overtime.
 - `completed` = finished at or after the planned time; `ended_early` = finished before it.
-- Sessions with under 1 minute of focused time are discarded, not logged (either status).
+- Every finished session is logged, however short. There is no minimum duration.
 
 ### Focus stats (`utils/focus.ts`)
 
