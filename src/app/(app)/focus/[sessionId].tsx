@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -33,8 +34,13 @@ export default function FocusTimerScreen() {
 
   const activeSession = useFocusStore((s) => s.activeSession);
   const sessions = useFocusStore((s) => s.sessions);
-  const { pauseSession, resumeSession, extendSession, endSession } =
-    useFocusStore.getState();
+  const {
+    pauseSession,
+    resumeSession,
+    extendSession,
+    endSession,
+    discardActiveSession,
+  } = useFocusStore.getState();
 
   const session = activeSession?.id === sessionId ? activeSession : null;
   const paused = session?.pausedAt != null;
@@ -79,7 +85,26 @@ export default function FocusTimerScreen() {
     }
   }, [user, saving, endSession, close]);
 
-  // The only way a session ends. Status comes from elapsed vs planned time.
+  // Throws the session away: nothing is saved and stats are untouched.
+  const handleDiscard = useCallback(() => {
+    Alert.alert(
+      "Discard session?",
+      "It won't be saved and won't count toward your streak or 7-day total.",
+      [
+        { text: "Keep going", style: "cancel" },
+        {
+          text: "Discard",
+          style: "destructive",
+          onPress: () => {
+            discardActiveSession();
+            close();
+          },
+        },
+      ],
+    );
+  }, [discardActiveSession, close]);
+
+  // The only way a session is saved. Status comes from elapsed vs planned time.
   const handleFinish = useCallback(() => {
     if (session) void save();
   }, [session, save]);
@@ -169,7 +194,16 @@ export default function FocusTimerScreen() {
             {paused ? "PAUSED" : overtime ? "OVERTIME" : "FOCUSING"}
           </Text>
         </View>
-        <View style={styles.close} />
+        <Pressable
+          onPress={handleDiscard}
+          disabled={saving}
+          accessibilityRole="button"
+          accessibilityLabel="Discard session"
+          hitSlop={4}
+          style={({ pressed }) => [styles.close, pressed && styles.pressed]}
+        >
+          <Ionicons name="trash-outline" size={20} color={colors.danger} />
+        </Pressable>
       </View>
 
       <View style={styles.content}>
