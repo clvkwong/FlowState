@@ -93,21 +93,32 @@ export function getFocusElapsedSeconds(
   return Math.max(0, Math.floor(ms / 1000));
 }
 
+/**
+ * Seconds left on the timer. Goes negative once the session runs past its
+ * planned time: the timer keeps running into overtime until the user finishes.
+ */
 export function getFocusRemainingSeconds(
   session: ActiveFocusSession,
   now = Date.now(),
 ): number {
-  return Math.max(
-    0,
-    session.plannedDurationSeconds - getFocusElapsedSeconds(session, now),
-  );
+  return session.plannedDurationSeconds - getFocusElapsedSeconds(session, now);
 }
 
-export function isFocusTimeUp(
+export function isFocusOvertime(
   session: ActiveFocusSession,
   now = Date.now(),
 ): boolean {
-  return getFocusRemainingSeconds(session, now) === 0;
+  return getFocusRemainingSeconds(session, now) < 0;
+}
+
+/** Status a session would be logged with if finished now. */
+export function getFocusResultStatus(
+  session: ActiveFocusSession,
+  now = Date.now(),
+): FocusSessionStatus {
+  return getFocusElapsedSeconds(session, now) >= session.plannedDurationSeconds
+    ? "completed"
+    : "ended_early";
 }
 
 export function pauseFocusSession(
@@ -148,20 +159,18 @@ export function canExtendFocusSession(session: ActiveFocusSession): boolean {
 }
 
 /**
- * The log to write when a session ends, or null when it is too short to keep.
- * Actual time never exceeds planned time.
+ * The log to write when the user finishes, or null when it is too short to
+ * keep. Actual time includes any overtime. Status is `completed` once the
+ * planned time was reached, `ended_early` before that.
  */
 export function buildFocusSessionResult(
   session: ActiveFocusSession,
   userId: string,
-  status: FocusSessionStatus,
   now = Date.now(),
 ): CreateFocusSessionInput | null {
-  const actual = Math.min(
-    session.plannedDurationSeconds,
-    getFocusElapsedSeconds(session, now),
-  );
+  const actual = getFocusElapsedSeconds(session, now);
   if (actual < FOCUS_MIN_LOGGED_SECONDS) return null;
+  const status = getFocusResultStatus(session, now);
   return {
     userId,
     task: session.task,

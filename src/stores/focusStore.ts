@@ -8,7 +8,6 @@ import type {
   ActiveFocusSession,
   FocusDraft,
   FocusSession,
-  FocusSessionStatus,
 } from "@/types/focus";
 import {
   buildFocusSessionResult,
@@ -32,14 +31,12 @@ interface FocusState {
   /** +5 minutes, capped at 180. */
   extendSession: () => void;
   /**
-   * Ends the active session: writes the log to Firestore, then adds it
+   * Finishes the active session (status from elapsed vs planned time):
+   * writes the log to Firestore, then adds it
    * locally. Returns null (and writes nothing) for a session under 1 minute.
    * On a failed write the session stays active so the user can retry.
    */
-  endSession: (
-    userId: string,
-    status: FocusSessionStatus,
-  ) => Promise<FocusSession | null>;
+  endSession: (userId: string) => Promise<FocusSession | null>;
   /** Drops the active session without logging it. */
   discardActiveSession: () => void;
   reset: () => void;
@@ -86,10 +83,10 @@ export const useFocusStore = create<FocusState>()(
         const { activeSession } = get();
         if (activeSession) set({ activeSession: extendFocusSession(activeSession) });
       },
-      endSession: async (userId, status) => {
+      endSession: async (userId) => {
         const { activeSession } = get();
         if (!activeSession) return null;
-        const result = buildFocusSessionResult(activeSession, userId, status);
+        const result = buildFocusSessionResult(activeSession, userId);
         if (!result) {
           set({ activeSession: null });
           return null;
