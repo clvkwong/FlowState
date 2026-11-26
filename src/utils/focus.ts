@@ -189,19 +189,16 @@ export interface FocusStreak {
 }
 
 /**
- * Consecutive days with at least one completed session. The current streak
- * runs back from today — or from yesterday when today has none yet, so it
- * doesn't read 0 every morning.
+ * Consecutive days with at least one logged session. Ended-early sessions
+ * count too: finishing a task before the timer runs out isn't penalized.
+ * The current streak runs back from today — or from yesterday when today has
+ * none yet, so it doesn't read 0 every morning.
  */
 export function getFocusStreak(
   sessions: FocusSession[],
   today: string = todayString(),
 ): FocusStreak {
-  const days = new Set(
-    sessions
-      .filter((s) => s.status === "completed")
-      .map(getFocusSessionDate),
-  );
+  const days = new Set(sessions.map(getFocusSessionDate));
   if (days.size === 0) return { current: 0, best: 0 };
 
   const prev = (date: string) =>

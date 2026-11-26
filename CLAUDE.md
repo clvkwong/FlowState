@@ -123,7 +123,7 @@ One log per finished focus session (`focusSessions` collection). Written once, w
 
 ### Focus stats (`utils/focus.ts`)
 
-- **Focus streak**: consecutive days (local date of `startedAt`) with ≥1 `completed` session, ending today — or yesterday if today has none yet. Also track best streak.
+- **Focus streak**: consecutive days (local date of `startedAt`) with ≥1 logged session (`completed` or `ended_early` — ending early is never penalized), ending today — or yesterday if today has none yet. Also track best streak.
 - **Last 7 days total**: sum of `actualDurationSeconds` over today and the previous 6 days. Sessions ended early add only the time actually focused.
 - Session count and per-day minutes (bar chart) over the same 7 days.
 
@@ -191,7 +191,7 @@ Bold, high-energy, gamified. Inspired by Streaks and Duolingo — reward complet
 - Bottom tabs: floating pill on a raised surface (`surfaceRaised`, light outline, deep shadow) with a fade behind it (`FloatingTabBar`); each tab is icon + label, the active one is a solid primary pill.
 - Step-through timer view for routine habits — fullscreen, one task at a time.
 - Streak/completion counter on the home screen — make it prominent.
-- Focus tab (`(tabs)/focus`): stats card (focus streak + best, last-7-days total + session count, 7-day bar chart with today in focus amber), primary "Start a focus session" CTA, and Recent sessions grouped by day (task, planned time, actual time, Done / Ended early, "Run again" which prefills the new-session form).
+- Focus tab (`(tabs)/focus`): stats card (focus streak + best, last-7-days total + session count, 7-day bar chart with today in focus amber), primary "Start a focus session" CTA, and Recent sessions grouped by day (task, planned time, actual time, Done / Finished early — both get the filled reward style — "Run again" which prefills the new-session form).
 - New focus session (`focus/new`, modal): task (required), description (optional, 200 chars), timer presets 15/25/45/60 min plus a ±5 min stepper (5–180 min).
 - Focus timer (`focus/[sessionId]`, full-screen modal): one task, countdown ring in focus amber, pause/resume, +5 min, finish now; closing ends the session early. Completion screen shows streak, sessions today and the 7-day total, with Done / Another round.
 - Home schedule: week strip (today ±3 days) and time-of-day pills. Today defaults to "Up next" (current window onward + Anytime); earlier windows collapse into one "still open" banner. Sections run Morning → Afternoon → Evening → Anytime, incomplete first, then the user's order (`compareHabits`: order → createdAt → name → id). Reorder screen (`habit/reorder`, header button) moves habits within each time-of-day section. Other days are view-only. Windows: morning < 12:00, afternoon 12–17, evening ≥ 17 (`utils/schedule.ts`).

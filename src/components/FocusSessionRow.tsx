@@ -19,21 +19,18 @@ export function FocusSessionRow({ session, onRunAgain }: FocusSessionRowProps) {
     <View
       style={[
         styles.row,
-        { backgroundColor: done ? withOpacity(colors.focus, 0.15) : colors.surface },
+        // Every logged session gets the filled, rewarding style: finishing a
+        // task before the timer runs out isn't a lesser outcome.
+        { backgroundColor: withOpacity(colors.focus, 0.15) },
       ]}
     >
       <View
-        style={[
-          styles.icon,
-          {
-            backgroundColor: done ? colors.focus : withOpacity(colors.focus, 0.15),
-          },
-        ]}
+        style={[styles.icon, { backgroundColor: colors.focus }]}
       >
         <Ionicons
-          name={done ? "checkmark" : "hourglass-outline"}
+          name={done ? "checkmark" : "flash"}
           size={20}
-          color={done ? colors.background : colors.focus}
+          color={colors.background}
         />
       </View>
 
@@ -50,12 +47,12 @@ export function FocusSessionRow({ session, onRunAgain }: FocusSessionRowProps) {
       <View
         style={styles.result}
         accessible
-        accessibilityLabel={`${done ? "Done" : "Ended early"}, focused ${formatFocusMinutes(session.actualDurationSeconds)}`}
+        accessibilityLabel={`${done ? "Done" : "Finished early"}, focused ${formatFocusMinutes(session.actualDurationSeconds)}`}
       >
         <Text style={styles.actual}>
           {formatDuration(session.actualDurationSeconds)}
         </Text>
-        <Text style={styles.status}>{done ? "DONE" : "ENDED EARLY"}</Text>
+        <Text style={styles.status}>{done ? "DONE" : "FINISHED EARLY"}</Text>
       </View>
 
       <Pressable
