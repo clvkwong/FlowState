@@ -1,5 +1,13 @@
-import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useRef, useState } from "react";
+import {
+  Alert,
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@react-native-vector-icons/ionicons";
@@ -16,7 +24,11 @@ import {
   FOCUS_MAX_MINUTES,
   FOCUS_MIN_MINUTES,
   FOCUS_PRESET_MINUTES,
+  formatFocusLength,
+  formatFocusTimer,
   getFocusDraftError,
+  parseTypedFocusMinutes,
+  splitFocusMinutes,
   stepFocusMinutes,
 } from "@/utils/focus";
 
@@ -41,8 +53,39 @@ export default function NewFocusSessionScreen() {
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(false);
 
-  const begin = () => {
-    const session = startSession({ task, description, plannedMinutes: minutes });
+  // Tap the time to type any duration (hours + minutes), like routine steps.
+  const [typing, setTyping] = useState(false);
+  const [hoursText, setHoursText] = useState("");
+  const [minutesText, setMinutesText] = useState("");
+  const minutesRef = useRef<TextInput>(null);
+  const typedMinutes = parseTypedFocusMinutes(hoursText, minutesText);
+
+  const openTimeEditor = () => {
+    const split = splitFocusMinutes(minutes);
+    setHoursText(String(split.hours));
+    setMinutesText(String(split.minutes).padStart(2, "0"));
+    setTyping(true);
+  };
+
+  /** Applies the typed time (if valid) and closes the editor. */
+  const commitTypedTime = (): number => {
+    const next = typedMinutes ?? minutes;
+    setMinutes(next);
+    setTyping(false);
+    Keyboard.dismiss();
+    return next;
+  };
+
+  const selectPreset = (preset: number) => {
+    setMinutes(preset);
+    if (typing) {
+      setTyping(false);
+      Keyboard.dismiss();
+    }
+  };
+
+  const begin = (plannedMinutes: number) => {
+    const session = startSession({ task, description, plannedMinutes });
     router.replace({
       pathname: "/(app)/focus/[sessionId]",
       params: { sessionId: session.id },
@@ -50,10 +93,11 @@ export default function NewFocusSessionScreen() {
   };
 
   const handleStart = () => {
+    const plannedMinutes = typing ? commitTypedTime() : minutes;
     const draftError = getFocusDraftError({
       task,
       description,
-      plannedMinutes: minutes,
+      plannedMinutes,
     });
     if (draftError) {
       setError(draftError);
@@ -62,7 +106,7 @@ export default function NewFocusSessionScreen() {
     setError("");
 
     if (!activeSession) {
-      begin();
+      begin(plannedMinutes);
       return;
     }
     Alert.alert(
@@ -78,7 +122,7 @@ export default function NewFocusSessionScreen() {
             setStarting(true);
             try {
               await endSession(user.uid);
-              begin();
+              begin(plannedMinutes);
             } catch {
               setError("Couldn't save the current session. Try again.");
             } finally {
@@ -152,11 +196,11 @@ export default function NewFocusSessionScreen() {
           <Text style={styles.label}>Timer</Text>
           <View style={styles.presets}>
             {FOCUS_PRESET_MINUTES.map((preset) => {
-              const selected = preset === minutes;
+              const selected = preset === (typing ? typedMinutes : minutes);
               return (
                 <Pressable
                   key={preset}
-                  onPress={() => setMinutes(preset)}
+                  onPress={() => selectPreset(preset)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                   accessibilityLabel={`${preset} minutes`}
@@ -179,30 +223,134 @@ export default function NewFocusSessionScreen() {
             })}
           </View>
 
-          <View style={styles.stepper}>
-            <StepButton
-              icon="remove"
-              label="5 minutes less"
-              disabled={minutes <= FOCUS_MIN_MINUTES}
-              onPress={() => setMinutes((m) => stepFocusMinutes(m, -1))}
-            />
-            <View
-              style={styles.stepperValue}
-              accessible
-              accessibilityLabel={`${minutes} minutes`}
-            >
-              <Text style={styles.minutes}>{minutes}:00</Text>
-              <Text style={styles.range}>
-                minutes · {FOCUS_MIN_MINUTES}–{FOCUS_MAX_MINUTES}
+          {typing ? (
+            <View style={[styles.stepper, styles.stepperTyping]}>
+              <View style={styles.typedRow}>
+                <View style={styles.typedField}>
+                  <TextInput
+                    value={hoursText}
+                    onChangeText={(text) => {
+                      const digits = text.replace(/\D/g, "").slice(0, 2);
+                      setHoursText(digits);
+                      if (digits.length === 2) minutesRef.current?.focus();
+                    }}
+                    keyboardType="number-pad"
+                    autoFocus
+                    selectTextOnFocus
+                    maxLength={2}
+                    accessibilityLabel="Hours"
+                    style={styles.typedInput}
+                  />
+                  <Text style={styles.typedLabel}>HR</Text>
+                </View>
+                <Text style={styles.typedColon}>:</Text>
+                <View style={styles.typedField}>
+                  <TextInput
+                    ref={minutesRef}
+                    value={minutesText}
+                    onChangeText={(text) =>
+                      setMinutesText(text.replace(/\D/g, "").slice(0, 2))
+                    }
+                    keyboardType="number-pad"
+                    selectTextOnFocus
+                    maxLength={2}
+                    returnKeyType="done"
+                    onSubmitEditing={() => {
+                      if (typedMinutes !== null) commitTypedTime();
+                    }}
+                    accessibilityLabel="Minutes"
+                    style={styles.typedInput}
+                  />
+                  <Text style={styles.typedLabel}>MIN</Text>
+                </View>
+              </View>
+              <Text
+                style={[
+                  styles.range,
+                  typedMinutes === null && styles.rangeError,
+                ]}
+              >
+                {typedMinutes === null
+                  ? `Enter at least ${formatFocusLength(FOCUS_MIN_MINUTES)}`
+                  : `Any time from ${formatFocusLength(FOCUS_MIN_MINUTES)} to ${formatFocusLength(FOCUS_MAX_MINUTES)}`}
               </Text>
+              <View style={styles.typedActions}>
+                <Pressable
+                  onPress={() => {
+                    setTyping(false);
+                    Keyboard.dismiss();
+                  }}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.typedButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.typedButtonText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={commitTypedTime}
+                  disabled={typedMinutes === null}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: typedMinutes === null }}
+                  style={({ pressed }) => [
+                    styles.typedButton,
+                    styles.typedButtonPrimary,
+                    pressed && styles.pressed,
+                    typedMinutes === null && styles.disabled,
+                  ]}
+                >
+                  <Text
+                    style={[styles.typedButtonText, styles.typedButtonTextPrimary]}
+                  >
+                    {typedMinutes === null
+                      ? "Set time"
+                      : `Set ${formatFocusLength(typedMinutes)}`}
+                  </Text>
+                </Pressable>
+              </View>
             </View>
-            <StepButton
-              icon="add"
-              label="5 minutes more"
-              disabled={minutes >= FOCUS_MAX_MINUTES}
-              onPress={() => setMinutes((m) => stepFocusMinutes(m, 1))}
-            />
-          </View>
+          ) : (
+            <View style={styles.stepper}>
+              <StepButton
+                icon="remove"
+                label="5 minutes less"
+                disabled={minutes <= FOCUS_MIN_MINUTES}
+                onPress={() => setMinutes((m) => stepFocusMinutes(m, -1))}
+              />
+              <Pressable
+                onPress={openTimeEditor}
+                accessibilityRole="button"
+                accessibilityLabel={`Timer ${formatFocusLength(minutes)}. Tap to type a time`}
+                style={({ pressed }) => [
+                  styles.stepperValue,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text
+                  style={styles.minutes}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {formatFocusTimer(minutes)}
+                </Text>
+                <View style={styles.editHint}>
+                  <Ionicons
+                    name="pencil"
+                    size={12}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={styles.range}>Tap to type a time</Text>
+                </View>
+              </Pressable>
+              <StepButton
+                icon="add"
+                label="5 minutes more"
+                disabled={minutes >= FOCUS_MAX_MINUTES}
+                onPress={() => setMinutes((m) => stepFocusMinutes(m, 1))}
+              />
+            </View>
+          )}
         </View>
 
         {error && task.trim() ? <Text style={styles.error}>{error}</Text> : null}
@@ -219,7 +367,12 @@ export default function NewFocusSessionScreen() {
         ]}
       >
         <Ionicons name="play" size={22} color={colors.textPrimary} />
-        <Text style={styles.startText}>Start focus · {minutes} min</Text>
+        <Text style={styles.startText}>
+          Start focus ·{" "}
+          {formatFocusLength(
+            typing && typedMinutes !== null ? typedMinutes : minutes,
+          )}
+        </Text>
       </Pressable>
     </SafeAreaView>
   );
@@ -374,8 +527,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   stepperValue: {
+    flex: 1,
     alignItems: "center",
     gap: 2,
+    paddingHorizontal: spacing.sm,
+  },
+  editHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   minutes: {
     fontSize: 52,
@@ -388,6 +548,74 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: colors.textSecondary,
+  },
+  rangeError: {
+    color: colors.danger,
+  },
+  stepperTyping: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: spacing.sm,
+  },
+  typedRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+  typedField: {
+    alignItems: "center",
+    gap: 4,
+  },
+  typedInput: {
+    width: 96,
+    height: 72,
+    borderRadius: borderRadius.lg,
+    borderWidth: 2,
+    borderColor: colors.focus,
+    backgroundColor: colors.surfaceRaised,
+    color: colors.focus,
+    fontSize: 44,
+    fontWeight: "900",
+    textAlign: "center",
+    fontVariant: ["tabular-nums"],
+    padding: 0,
+  },
+  typedLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+    color: colors.textSecondary,
+  },
+  typedColon: {
+    fontSize: 44,
+    lineHeight: 72,
+    fontWeight: "900",
+    color: colors.focus,
+  },
+  typedActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  typedButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: borderRadius.pill,
+    backgroundColor: colors.surfaceRaised,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  typedButtonPrimary: {
+    flex: 2,
+    backgroundColor: colors.focus,
+  },
+  typedButtonText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.textPrimary,
+  },
+  typedButtonTextPrimary: {
+    color: colors.background,
   },
   error: {
     fontSize: 14,

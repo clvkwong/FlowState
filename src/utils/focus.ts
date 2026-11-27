@@ -13,8 +13,9 @@ import {
   todayString,
 } from "@/utils/date";
 
-export const FOCUS_MIN_MINUTES = 5;
-export const FOCUS_MAX_MINUTES = 180;
+export const FOCUS_MIN_MINUTES = 1;
+/** Typed timers go up to 23:59 (two-digit hours field). */
+export const FOCUS_MAX_MINUTES = 23 * 60 + 59;
 export const FOCUS_STEP_MINUTES = 5;
 export const FOCUS_PRESET_MINUTES = [15, 25, 45, 60] as const;
 export const FOCUS_DEFAULT_MINUTES = 25;
@@ -39,8 +40,55 @@ export function clampFocusMinutes(minutes: number): number {
   );
 }
 
+/**
+ * ±5 min stepper. Off-grid values (e.g. a typed 22) snap to the next multiple
+ * of 5 in that direction (25 / 20) so the stepper lands back on round numbers.
+ */
 export function stepFocusMinutes(minutes: number, direction: 1 | -1): number {
-  return clampFocusMinutes(minutes + direction * FOCUS_STEP_MINUTES);
+  const next =
+    direction === 1
+      ? Math.floor(minutes / FOCUS_STEP_MINUTES + 1) * FOCUS_STEP_MINUTES
+      : Math.ceil(minutes / FOCUS_STEP_MINUTES - 1) * FOCUS_STEP_MINUTES;
+  return clampFocusMinutes(next);
+}
+
+export function splitFocusMinutes(minutes: number): {
+  hours: number;
+  minutes: number;
+} {
+  const total = Math.max(0, Math.round(minutes));
+  return { hours: Math.floor(total / 60), minutes: total % 60 };
+}
+
+/**
+ * Parses the typed hours/minutes fields. Empty fields count as 0; minutes over
+ * 59 roll into hours. Returns null when the total is below the minimum.
+ */
+export function parseTypedFocusMinutes(
+  hoursText: string,
+  minutesText: string,
+): number | null {
+  const hours = Number(hoursText || "0");
+  const minutes = Number(minutesText || "0");
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  const total = Math.round(hours * 60 + minutes);
+  if (total < FOCUS_MIN_MINUTES) return null;
+  return Math.min(total, FOCUS_MAX_MINUTES);
+}
+
+/** Timer face for a whole-minute duration: "25:00", "1:30:00". */
+export function formatFocusTimer(minutes: number): string {
+  const split = splitFocusMinutes(minutes);
+  if (split.hours === 0) return `${split.minutes}:00`;
+  return `${split.hours}:${String(split.minutes).padStart(2, "0")}:00`;
+}
+
+/** Spoken/short label: "25 min", "1 hr 30 min", "2 hr". */
+export function formatFocusLength(minutes: number): string {
+  const split = splitFocusMinutes(minutes);
+  if (split.hours === 0) return `${split.minutes} min`;
+  if (split.minutes === 0) return `${split.hours} hr`;
+  return `${split.hours} hr ${split.minutes} min`;
 }
 
 /** Returns an error message, or null when the draft is valid. */
@@ -54,7 +102,7 @@ export function getFocusDraftError(draft: FocusDraft): string | null {
     draft.plannedMinutes < FOCUS_MIN_MINUTES ||
     draft.plannedMinutes > FOCUS_MAX_MINUTES
   ) {
-    return `Timer must be ${FOCUS_MIN_MINUTES}–${FOCUS_MAX_MINUTES} minutes`;
+    return `Timer must be between ${formatFocusLength(FOCUS_MIN_MINUTES)} and ${formatFocusLength(FOCUS_MAX_MINUTES)}`;
   }
   return null;
 }
@@ -290,7 +338,17 @@ export function formatFocusTotal(seconds: number): string {
   return `${hours}h ${String(minutes).padStart(2, "0")}m`;
 }
 
-/** Whole minutes for labels, e.g. "25 min". */
+/** Whole minutes for labels, e.g. "25 min", "1 hr 30 min". */
 export function formatFocusMinutes(seconds: number): string {
-  return `${Math.round(seconds / 60)} min`;
+  return formatFocusLength(Math.round(seconds / 60));
+}
+
+/** Countdown clock: "24:59" under an hour, "1:04:59" from an hour up. */
+export function formatFocusClock(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = String(total % 60).padStart(2, "0");
+  if (hours === 0) return `${minutes}:${secs}`;
+  return `${hours}:${String(minutes).padStart(2, "0")}:${secs}`;
 }

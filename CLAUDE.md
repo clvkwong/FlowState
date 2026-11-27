@@ -110,7 +110,7 @@ One log per finished focus session (`focusSessions` collection). Written once, w
   userId: string
   task: string                   // required, the one-off task name
   description?: string           // optional, max 200 chars; omitted when empty
-  plannedDurationSeconds: number // timer value chosen at start, never changed mid-session; 5–180 min
+  plannedDurationSeconds: number // timer value chosen at start, never changed mid-session; any whole-minute value 1 min–23 h 59 min
   actualDurationSeconds: number  // time actually focused (excludes paused time; includes overtime)
   status: 'completed' | 'ended_early'
   startedAt: Timestamp
@@ -193,7 +193,7 @@ Bold, high-energy, gamified. Inspired by Streaks and Duolingo — reward complet
 - Step-through timer view for routine habits — fullscreen, one task at a time.
 - Streak/completion counter on the home screen — make it prominent.
 - Focus tab (`(tabs)/focus`): stats card (focus streak + best, last-7-days total + session count, 7-day bar chart with today in focus amber), primary "Start a focus session" CTA, and Recent sessions grouped by day, paged 10 at a time with a "Show N more · M older" button (task, planned time, actual time, Done / Finished early — both get the filled reward style — "Run again" which prefills the new-session form).
-- New focus session (`focus/new`, modal): task (required), description (optional, 200 chars), timer presets 15/25/45/60 min plus a ±5 min stepper (5–180 min).
+- New focus session (`focus/new`, modal): task (required), description (optional, 200 chars), timer presets 15/25/45/60 min plus a ±5 min stepper (snaps to multiples of 5); tap the time to type any hours + minutes on the number pad (1 min–23 h 59 min), like routine step durations.
 - Focus timer (`focus/[sessionId]`, full-screen modal): one task, countdown ring in focus amber, pause/resume (no +5 min: the timer runs into overtime instead). At the planned time it keeps going into overtime (ring refills in check green, counts `+m:ss`). Only the "Finish session" CTA saves a session; closing the screen leaves it running (Resume banner on the Focus tab). A Discard button (trash, top right, branded `ConfirmDialog`) throws the session away: nothing saved, stats untouched. Every logged session — completed or finished early — gets the celebration screen: streak, sessions today and the 7-day total, with Done / Another round.
 - Home schedule: week strip (today ±3 days) and time-of-day pills. Today defaults to "Up next" (current window onward + Anytime); earlier windows collapse into one "still open" banner. Sections run Morning → Afternoon → Evening → Anytime, incomplete first, then the user's order (`compareHabits`: order → createdAt → name → id). Reorder screen (`habit/reorder`, header button) moves habits within each time-of-day section. Other days are view-only. Windows: morning < 12:00, afternoon 12–17, evening ≥ 17 (`utils/schedule.ts`).
 

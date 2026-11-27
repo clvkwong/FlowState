@@ -3,8 +3,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { borderRadius, colors, withOpacity } from "@/constants/theme";
 import type { FocusSession } from "@/types/focus";
-import { formatDuration, formatTime } from "@/utils/date";
-import { formatFocusMinutes } from "@/utils/focus";
+import { formatTime } from "@/utils/date";
+import { formatFocusClock, formatFocusMinutes } from "@/utils/focus";
 
 interface FocusSessionRowProps {
   session: FocusSession;
@@ -50,7 +50,7 @@ export function FocusSessionRow({ session, onRunAgain }: FocusSessionRowProps) {
         accessibilityLabel={`${done ? "Done" : "Finished early"}, focused ${formatFocusMinutes(session.actualDurationSeconds)}`}
       >
         <Text style={styles.actual}>
-          {formatDuration(session.actualDurationSeconds)}
+          {formatFocusClock(session.actualDurationSeconds)}
         </Text>
         <Text style={styles.status}>{done ? "DONE" : "FINISHED EARLY"}</Text>
       </View>

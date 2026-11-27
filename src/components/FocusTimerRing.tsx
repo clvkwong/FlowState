@@ -8,7 +8,7 @@ import Animated, {
 import Svg, { Circle } from "react-native-svg";
 
 import { colors } from "@/constants/theme";
-import { formatDuration } from "@/utils/date";
+import { formatFocusClock } from "@/utils/focus";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -49,9 +49,9 @@ export function FocusTimerRing({
   }));
 
   const display = overtime
-    ? `+${formatDuration(-remainingSeconds)}`
-    : formatDuration(remainingSeconds);
-  const planned = formatDuration(plannedSeconds);
+    ? `+${formatFocusClock(-remainingSeconds)}`
+    : formatFocusClock(remainingSeconds);
+  const planned = formatFocusClock(plannedSeconds);
   const accent = overtime ? colors.check : colors.focus;
 
   return (
@@ -61,7 +61,7 @@ export function FocusTimerRing({
       accessibilityRole="timer"
       accessibilityLabel={`${
         overtime
-          ? `${formatDuration(-remainingSeconds)} over the planned ${planned}`
+          ? `${formatFocusClock(-remainingSeconds)} over the planned ${planned}`
           : `${display} left of ${planned}`
       }${paused ? ", paused" : ""}`}
     >
@@ -89,7 +89,17 @@ export function FocusTimerRing({
           animatedProps={animatedProps}
         />
       </Svg>
-      <Text style={[styles.time, paused && styles.timePaused]}>{display}</Text>
+      <Text
+        style={[
+          styles.time,
+          display.length > 6 && styles.timeLong,
+          paused && styles.timePaused,
+        ]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {display}
+      </Text>
       <Text style={[styles.caption, { color: accent }]}>
         {paused ? "PAUSED" : overtime ? `OVER ${planned}` : `OF ${planned}`}
       </Text>
@@ -111,6 +121,12 @@ const styles = StyleSheet.create({
     letterSpacing: -2,
     color: colors.textPrimary,
     fontVariant: ["tabular-nums"],
+    maxWidth: SIZE - STROKE * 2 - 24,
+  },
+  // H:MM:SS (and +H:MM:SS overtime) needs a smaller face to fit the ring.
+  timeLong: {
+    fontSize: 54,
+    letterSpacing: -1.5,
   },
   timePaused: {
     color: colors.textSecondary,
