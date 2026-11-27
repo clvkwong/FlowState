@@ -21,7 +21,8 @@ import {
   groupFocusSessionsByDay,
 } from "@/utils/focus";
 
-const PAGE_SIZE = 20;
+// Recent sessions load a page at a time; Show more adds the next page.
+const PAGE_SIZE = 10;
 
 export default function FocusScreen() {
   const router = useRouter();
@@ -152,9 +153,17 @@ export default function FocusScreen() {
             <Pressable
               onPress={() => setVisibleCount((c) => c + PAGE_SIZE)}
               accessibilityRole="button"
+              accessibilityLabel={`Show ${Math.min(PAGE_SIZE, sessions.length - visibleCount)} more sessions, ${sessions.length - visibleCount} older`}
               style={({ pressed }) => [styles.more, pressed && styles.pressed]}
             >
-              <Text style={styles.moreText}>Show more</Text>
+              <Ionicons name="chevron-down" size={18} color={colors.textPrimary} />
+              <Text style={styles.moreText}>
+                Show {Math.min(PAGE_SIZE, sessions.length - visibleCount)} more
+              </Text>
+              <View style={styles.moreSpacer} />
+              <Text style={styles.moreCount}>
+                {sessions.length - visibleCount} older
+              </Text>
             </Pressable>
           ) : null}
         </View>
@@ -297,11 +306,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   more: {
-    alignSelf: "center",
+    marginTop: spacing.xs,
+    minHeight: 52,
     paddingHorizontal: 20,
-    paddingVertical: 12,
     borderRadius: borderRadius.pill,
-    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: colors.surfaceRaised,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  moreSpacer: {
+    flex: 1,
+  },
+  moreCount: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.textSecondary,
   },
   moreText: {
     fontSize: 15,
