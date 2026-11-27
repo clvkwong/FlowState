@@ -8,6 +8,8 @@ import type {
 import {
   addDays,
   formatDateString,
+  formatRelativeDay,
+  formatShortDate,
   getPastDateStrings,
   parseDateString,
   todayString,
@@ -329,6 +331,11 @@ export function groupFocusSessionsByDay(
   return groups;
 }
 
+/** Day heading for a session date: "Today", "Yesterday", else e.g. "Wed, 25 Nov". */
+export function focusDayLabel(date: string, today: string = todayString()): string {
+  return formatRelativeDay(date, today) ?? formatShortDate(date);
+}
+
 /** "6h 33m", "45m", "0m". */
 export function formatFocusTotal(seconds: number): string {
   const totalMinutes = Math.floor(Math.max(0, seconds) / 60);
@@ -351,4 +358,136 @@ export function formatFocusClock(seconds: number): string {
   const secs = String(total % 60).padStart(2, "0");
   if (hours === 0) return `${minutes}:${secs}`;
   return `${hours}:${String(minutes).padStart(2, "0")}:${secs}`;
+}
+
+// ---------------------------------------------------------------------------
+// Editing / deleting past sessions
+// ---------------------------------------------------------------------------
+
+/** What the Edit session screen can change. Planned time and dates stay as logged. */
+export interface FocusSessionEdit {
+  task: string;
+  description?: string;
+  actualDurationSeconds: number;
+}
+
+/** Wall-clock seconds from start to finish (focused + paused). */
+export function getFocusSessionSpanSeconds(session: FocusSession): number {
+  const ms = Date.parse(session.endedAt) - Date.parse(session.startedAt);
+  return Number.isFinite(ms) ? Math.max(0, Math.floor(ms / 1000)) : 0;
+}
+
+/** Paused seconds: the span minus the time actually focused. */
+export function getFocusSessionPausedSeconds(session: FocusSession): number {
+  return Math.max(
+    0,
+    getFocusSessionSpanSeconds(session) - session.actualDurationSeconds,
+  );
+}
+
+/** `completed` at or over the planned time, `ended_early` under it. */
+export function getFocusStatusForDuration(
+  actualSeconds: number,
+  plannedSeconds: number,
+): FocusSessionStatus {
+  return actualSeconds >= plannedSeconds ? "completed" : "ended_early";
+}
+
+/**
+ * Bounds for an edited focused time. The most is the session's span (you
+ * can't focus longer than it ran); the least is 1 minute, or the logged value
+ * when that was already shorter (every session is logged, however short).
+ */
+export function getFocusEditBounds(session: FocusSession): {
+  min: number;
+  max: number;
+} {
+  const max = Math.max(
+    getFocusSessionSpanSeconds(session),
+    session.actualDurationSeconds,
+  );
+  const min = Math.min(60, session.actualDurationSeconds, max);
+  return { min, max };
+}
+
+/** ±1 min stepper on seconds. Off-minute values snap to the next whole minute. */
+export function stepFocusSeconds(
+  seconds: number,
+  direction: 1 | -1,
+  bounds: { min: number; max: number },
+): number {
+  const next =
+    direction === 1
+      ? Math.floor(seconds / 60 + 1) * 60
+      : Math.ceil(seconds / 60 - 1) * 60;
+  return Math.min(bounds.max, Math.max(bounds.min, next));
+}
+
+/** Returns an error message, or null when the edit is valid. */
+export function getFocusEditError(
+  edit: FocusSessionEdit,
+  session: FocusSession,
+): string | null {
+  if (!edit.task.trim()) return "Add a task name";
+  if ((edit.description ?? "").trim().length > FOCUS_DESCRIPTION_MAX) {
+    return `Description must be ${FOCUS_DESCRIPTION_MAX} characters or less`;
+  }
+  const { min, max } = getFocusEditBounds(session);
+  if (
+    !Number.isFinite(edit.actualDurationSeconds) ||
+    edit.actualDurationSeconds < min ||
+    edit.actualDurationSeconds > max
+  ) {
+    return `Time focused must be between ${formatFocusClock(min)} and ${formatFocusClock(max)}`;
+  }
+  return null;
+}
+
+/** The session after an edit: trimmed text, status re-derived from the time. */
+export function applyFocusSessionEdit(
+  session: FocusSession,
+  edit: FocusSessionEdit,
+): FocusSession {
+  const error = getFocusEditError(edit, session);
+  if (error) throw new FocusValidationError(error);
+  const { description: _old, ...rest } = session;
+  const description = edit.description?.trim();
+  const actualDurationSeconds = Math.round(edit.actualDurationSeconds);
+  return {
+    ...rest,
+    task: edit.task.trim(),
+    ...(description ? { description } : {}),
+    actualDurationSeconds,
+    status: getFocusStatusForDuration(
+      actualDurationSeconds,
+      session.plannedDurationSeconds,
+    ),
+  };
+}
+
+export interface FocusDeleteImpact {
+  streakBefore: number;
+  streakAfter: number;
+  /** Null when the session is outside the last 7 days. */
+  weekBefore: number | null;
+  weekAfter: number | null;
+}
+
+/** How the Focus stats change if `sessionId` is deleted. */
+export function getFocusDeleteImpact(
+  sessions: FocusSession[],
+  sessionId: string,
+  now: Date = new Date(),
+): FocusDeleteImpact {
+  const today = formatDateString(now);
+  const remaining = sessions.filter((s) => s.id !== sessionId);
+  const target = sessions.find((s) => s.id === sessionId);
+  const weekDates = new Set(getPastDateStrings(7, now));
+  const inWeek = target ? weekDates.has(getFocusSessionDate(target)) : false;
+  return {
+    streakBefore: getFocusStreak(sessions, today).current,
+    streakAfter: getFocusStreak(remaining, today).current,
+    weekBefore: inWeek ? getFocusWeekStats(sessions, now).totalSeconds : null,
+    weekAfter: inWeek ? getFocusWeekStats(remaining, now).totalSeconds : null,
+  };
 }

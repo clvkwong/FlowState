@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ComponentProps } from "react";
+import { useEffect, useRef, type ComponentProps, type ReactNode } from "react";
 import {
   Animated,
   Modal,
@@ -22,6 +22,10 @@ interface ConfirmDialogProps {
   tone?: "danger" | "primary";
   onConfirm: () => void;
   onCancel: () => void;
+  /** Extra content between the message and the buttons. */
+  children?: ReactNode;
+  /** Disables the confirm button (e.g. while the action runs). */
+  confirmDisabled?: boolean;
 }
 
 /**
@@ -39,6 +43,8 @@ export function ConfirmDialog({
   tone = "primary",
   onConfirm,
   onCancel,
+  children,
+  confirmDisabled,
 }: ConfirmDialogProps) {
   const scale = useRef(new Animated.Value(0.94)).current;
   const accent = tone === "danger" ? colors.danger : colors.primary;
@@ -83,6 +89,7 @@ export function ConfirmDialog({
             {title}
           </Text>
           <Text style={styles.message}>{message}</Text>
+          {children}
 
           <View style={styles.actions}>
             <Pressable
@@ -94,7 +101,9 @@ export function ConfirmDialog({
             </Pressable>
             <Pressable
               onPress={onConfirm}
+              disabled={confirmDisabled}
               accessibilityRole="button"
+              accessibilityState={{ disabled: !!confirmDisabled }}
               style={({ pressed }) => [
                 styles.confirm,
                 {
@@ -102,6 +111,7 @@ export function ConfirmDialog({
                   backgroundColor: withOpacity(accent, 0.12),
                 },
                 pressed && styles.pressed,
+                confirmDisabled && styles.disabled,
               ]}
             >
               <Text style={[styles.confirmText, { color: accent }]}>
@@ -116,6 +126,9 @@ export function ConfirmDialog({
 }
 
 const styles = StyleSheet.create({
+  disabled: {
+    opacity: 0.5,
+  },
   backdrop: {
     flex: 1,
     justifyContent: "center",

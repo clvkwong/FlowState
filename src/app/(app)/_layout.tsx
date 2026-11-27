@@ -27,6 +27,11 @@ export default function AppLayout() {
         options={{ title: '', headerShown: false, presentation: 'fullScreenModal' }}
       />
       <Stack.Screen name="focus/new" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="focus/log/[id]/index" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="focus/log/[id]/edit"
+        options={{ headerShown: false, presentation: 'modal' }}
+      />
       <Stack.Screen
         name="focus/[sessionId]"
         options={{ title: '', headerShown: false, presentation: 'fullScreenModal' }}

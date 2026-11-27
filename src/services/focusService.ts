@@ -1,9 +1,13 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
+  deleteField,
+  doc,
   getDocs,
   query,
   Timestamp,
+  updateDoc,
   where,
 } from "firebase/firestore";
 import { db } from "@/services/firebase";
@@ -46,7 +50,7 @@ export async function fetchFocusSessions(
   return snapshot.docs.map((d) => docToFocusSession(d.id, d.data()));
 }
 
-/** Writes a finished session. Sessions are never edited after this. */
+/** Writes a finished session. */
 export async function createFocusSession(
   input: CreateFocusSessionInput,
 ): Promise<FocusSession> {
@@ -63,4 +67,21 @@ export async function createFocusSession(
 
   const ref = await addDoc(collection(db, COLLECTION), payload);
   return { id: ref.id, ...input };
+}
+
+/**
+ * Saves an edit to a past session. Only the editable fields are written:
+ * planned time, start/end and owner stay as logged.
+ */
+export async function updateFocusSession(session: FocusSession): Promise<void> {
+  await updateDoc(doc(db, COLLECTION, session.id), {
+    task: session.task,
+    description: session.description || deleteField(),
+    actualDurationSeconds: session.actualDurationSeconds,
+    status: session.status,
+  });
+}
+
+export async function deleteFocusSession(sessionId: string): Promise<void> {
+  await deleteDoc(doc(db, COLLECTION, sessionId));
 }
