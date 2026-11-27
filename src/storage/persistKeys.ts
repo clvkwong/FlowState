@@ -8,6 +8,10 @@ export function getLogPersistKey(): string {
   return `flowstate-logs`;
 }
 
+export function getFocusPersistKey(): string {
+  return `flowstate-focus`;
+}
+
 export function getRoutineSessionPersistKey(): string {
   return `flowstate-routine-session`;
 }
