@@ -9,19 +9,34 @@ import { formatFocusClock, formatFocusMinutes } from "@/utils/focus";
 interface FocusSessionRowProps {
   session: FocusSession;
   onRunAgain: (session: FocusSession) => void;
+  /** Tap: open the session's detail screen. */
+  onPress: (session: FocusSession) => void;
+  /** Long-press: open the View / Edit / Delete sheet. */
+  onLongPress: (session: FocusSession) => void;
 }
 
 /** One past focus session: task, planned vs actual time, status, Run again. */
-export function FocusSessionRow({ session, onRunAgain }: FocusSessionRowProps) {
+export function FocusSessionRow({
+  session,
+  onRunAgain,
+  onPress,
+  onLongPress,
+}: FocusSessionRowProps) {
   const done = session.status === "completed";
 
   return (
-    <View
-      style={[
+    <Pressable
+      onPress={() => onPress(session)}
+      onLongPress={() => onLongPress(session)}
+      delayLongPress={350}
+      accessibilityRole="button"
+      accessibilityHint="Opens the session. Long-press for more options."
+      style={({ pressed }) => [
         styles.row,
         // Every logged session gets the filled, rewarding style: finishing a
         // task before the timer runs out isn't a lesser outcome.
         { backgroundColor: withOpacity(colors.focus, 0.15) },
+        pressed && styles.rowPressed,
       ]}
     >
       <View
@@ -64,7 +79,7 @@ export function FocusSessionRow({ session, onRunAgain }: FocusSessionRowProps) {
       >
         <Ionicons name="refresh" size={18} color={colors.textPrimary} />
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 
@@ -77,6 +92,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+  },
+  rowPressed: {
+    transform: [{ scale: 0.98 }],
   },
   icon: {
     width: 40,

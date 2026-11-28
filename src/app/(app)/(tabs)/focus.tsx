@@ -1,12 +1,16 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import { borderRadius, colors, spacing, withOpacity } from "@/constants/theme";
+import { FocusSessionActionSheet } from "@/components/FocusSessionActionSheet";
 import { FocusSessionRow } from "@/components/FocusSessionRow";
 import { FocusStatsCard } from "@/components/FocusStatsCard";
+import { SwipeActionsRow } from "@/components/SwipeActionsRow";
+import { useDeleteFocusSession } from "@/hooks/useDeleteFocusSession";
 import { useNow } from "@/hooks/useNow";
 import { useFocusStore } from "@/stores/focusStore";
 import type { FocusSession } from "@/types/focus";
@@ -24,6 +28,10 @@ import {
 // Recent sessions load a page at a time; Show more adds the next page.
 const PAGE_SIZE = 10;
 
+// Let the sheet's dismiss animation finish before navigating or opening the
+// delete dialog; iOS drops a Modal presented while another is closing.
+const SHEET_DISMISS_MS = 250;
+
 export default function FocusScreen() {
   const router = useRouter();
   const now = useNow();
@@ -32,6 +40,17 @@ export default function FocusScreen() {
   const sessions = useFocusStore((s) => s.sessions);
   const activeSession = useFocusStore((s) => s.activeSession);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [actionSessionId, setActionSessionId] = useState<string | null>(null);
+  const actionSession =
+    sessions.find((s) => s.id === actionSessionId) ?? null;
+  const { requestDelete, dialog: deleteDialog } = useDeleteFocusSession();
+
+  // Only one swiped-open row at a time.
+  const openRow = useRef<SwipeableMethods | null>(null);
+  const handleRowOpen = (row: SwipeableMethods) => {
+    if (openRow.current && openRow.current !== row) openRow.current.close();
+    openRow.current = row;
+  };
 
   const streak = useMemo(() => getFocusStreak(sessions, today), [sessions, today]);
   const week = useMemo(() => getFocusWeekStats(sessions, now), [sessions, now]);
@@ -63,6 +82,23 @@ export default function FocusScreen() {
         minutes: String(Math.round(session.plannedDurationSeconds / 60)),
       },
     });
+
+  const viewSession = (session: FocusSession) =>
+    router.push({
+      pathname: "/(app)/focus/log/[id]",
+      params: { id: session.id },
+    });
+
+  const editSession = (session: FocusSession) =>
+    router.push({
+      pathname: "/(app)/focus/log/[id]/edit",
+      params: { id: session.id },
+    });
+
+  const afterSheetCloses = (fn: () => void) => {
+    setActionSessionId(null);
+    setTimeout(fn, SHEET_DISMISS_MS);
+  };
 
   const resume = () => {
     if (!activeSession) return;
@@ -116,7 +152,12 @@ export default function FocusScreen() {
         )}
 
         <View style={styles.list}>
-          <Text style={styles.sectionTitle}>Recent sessions</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent sessions</Text>
+            {groups.length > 0 ? (
+              <Text style={styles.sectionHint}>Hold or swipe to edit</Text>
+            ) : null}
+          </View>
 
           {groups.length === 0 ? (
             <View style={styles.empty}>
@@ -139,11 +180,22 @@ export default function FocusScreen() {
                   ).toUpperCase()}
                 </Text>
                 {group.sessions.map((session) => (
-                  <FocusSessionRow
+                  <SwipeActionsRow
                     key={session.id}
-                    session={session}
-                    onRunAgain={runAgain}
-                  />
+                    itemLabel={session.task}
+                    borderRadius={borderRadius.lg}
+                    onView={() => viewSession(session)}
+                    onEdit={() => editSession(session)}
+                    onDelete={() => requestDelete(session)}
+                    onOpen={handleRowOpen}
+                  >
+                    <FocusSessionRow
+                      session={session}
+                      onRunAgain={runAgain}
+                      onPress={viewSession}
+                      onLongPress={(s) => setActionSessionId(s.id)}
+                    />
+                  </SwipeActionsRow>
                 ))}
               </View>
             ))
@@ -168,6 +220,16 @@ export default function FocusScreen() {
           ) : null}
         </View>
       </ScrollView>
+
+      <FocusSessionActionSheet
+        session={actionSession}
+        today={today}
+        onClose={() => setActionSessionId(null)}
+        onView={(session) => afterSheetCloses(() => viewSession(session))}
+        onEdit={(session) => afterSheetCloses(() => editSession(session))}
+        onDelete={(session) => afterSheetCloses(() => requestDelete(session))}
+      />
+      {deleteDialog}
     </SafeAreaView>
   );
 }
@@ -261,6 +323,17 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: 10,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  sectionHint: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
   },
   sectionTitle: {
     fontSize: 20,

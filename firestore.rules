@@ -20,13 +20,20 @@ service cloud.firestore {
         && resource.data.userId == request.auth.uid;
     }
 
-    // Focus sessions are written once when a session ends and never edited.
+    // Focus sessions are written when a session ends. Past sessions can be
+    // edited (task, description, focused time, status) or deleted; owner,
+    // planned time and start/end stay as logged.
     match /focusSessions/{sessionId} {
       allow read: if request.auth != null
         && resource.data.userId == request.auth.uid;
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if false;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['task', 'description', 'actualDurationSeconds', 'status']);
+      allow delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
     }
   }
 }

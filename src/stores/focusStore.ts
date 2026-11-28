@@ -36,6 +36,10 @@ interface FocusState {
   endSession: (userId: string) => Promise<FocusSession | null>;
   /** Drops the active session without logging it. */
   discardActiveSession: () => void;
+  /** Saves an edited past session: Firestore first, then local. */
+  updateSession: (session: FocusSession) => Promise<void>;
+  /** Deletes a past session: Firestore first, then local. */
+  deleteSession: (sessionId: string) => Promise<void>;
   reset: () => void;
   setHasHydrated: (value: boolean) => void;
 }
@@ -85,6 +89,18 @@ export const useFocusStore = create<FocusState>()(
         return session;
       },
       discardActiveSession: () => set({ activeSession: null }),
+      updateSession: async (session) => {
+        await focusService.updateFocusSession(session);
+        set({
+          sessions: get().sessions.map((s) =>
+            s.id === session.id ? session : s,
+          ),
+        });
+      },
+      deleteSession: async (sessionId) => {
+        await focusService.deleteFocusSession(sessionId);
+        set({ sessions: get().sessions.filter((s) => s.id !== sessionId) });
+      },
       reset: () =>
         set({ sessions: [], activeSession: null, _hasHydrated: false }),
       setHasHydrated: (value) => set({ _hasHydrated: value }),
