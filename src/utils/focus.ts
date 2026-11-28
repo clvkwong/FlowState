@@ -394,33 +394,14 @@ export function getFocusStatusForDuration(
 }
 
 /**
- * Bounds for an edited focused time. The most is the session's span (you
- * can't focus longer than it ran); the least is 1 minute, or the logged value
- * when that was already shorter (every session is logged, however short).
+ * ±1 min stepper on seconds for an edited focused time. Off-minute values
+ * snap to the next whole minute in that direction. There is no upper limit;
+ * stepping down stops at 1 minute (a focused time must stay above zero).
  */
-export function getFocusEditBounds(session: FocusSession): {
-  min: number;
-  max: number;
-} {
-  const max = Math.max(
-    getFocusSessionSpanSeconds(session),
-    session.actualDurationSeconds,
-  );
-  const min = Math.min(60, session.actualDurationSeconds, max);
-  return { min, max };
-}
-
-/** ±1 min stepper on seconds. Off-minute values snap to the next whole minute. */
-export function stepFocusSeconds(
-  seconds: number,
-  direction: 1 | -1,
-  bounds: { min: number; max: number },
-): number {
-  const next =
-    direction === 1
-      ? Math.floor(seconds / 60 + 1) * 60
-      : Math.ceil(seconds / 60 - 1) * 60;
-  return Math.min(bounds.max, Math.max(bounds.min, next));
+export function stepFocusSeconds(seconds: number, direction: 1 | -1): number {
+  if (direction === 1) return Math.floor(seconds / 60 + 1) * 60;
+  if (seconds <= 60) return seconds;
+  return Math.max(60, Math.ceil(seconds / 60 - 1) * 60);
 }
 
 /** Returns an error message, or null when the edit is valid. */
@@ -432,13 +413,11 @@ export function getFocusEditError(
   if ((edit.description ?? "").trim().length > FOCUS_DESCRIPTION_MAX) {
     return `Description must be ${FOCUS_DESCRIPTION_MAX} characters or less`;
   }
-  const { min, max } = getFocusEditBounds(session);
   if (
     !Number.isFinite(edit.actualDurationSeconds) ||
-    edit.actualDurationSeconds < min ||
-    edit.actualDurationSeconds > max
+    Math.round(edit.actualDurationSeconds) <= 0
   ) {
-    return `Time focused must be between ${formatFocusClock(min)} and ${formatFocusClock(max)}`;
+    return "Time focused must be more than 0";
   }
   return null;
 }

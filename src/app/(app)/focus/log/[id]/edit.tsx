@@ -25,7 +25,6 @@ import {
   focusDayLabel,
   formatFocusClock,
   formatFocusMinutes,
-  getFocusEditBounds,
   getFocusEditError,
   getFocusSessionDate,
   getFocusStatusForDuration,
@@ -59,7 +58,6 @@ function EditForm({ session }: { session: FocusSession }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const bounds = getFocusEditBounds(session);
   const planned = session.plannedDurationSeconds;
   const status = getFocusStatusForDuration(seconds, planned);
   const done = status === "completed";
@@ -71,10 +69,7 @@ function EditForm({ session }: { session: FocusSession }) {
   const minutesRef = useRef<TextInput>(null);
   const typedSeconds =
     (Number(hoursText || "0") * 60 + Number(minutesText || "0")) * 60;
-  const typedValid =
-    Number.isFinite(typedSeconds) &&
-    typedSeconds >= bounds.min &&
-    typedSeconds <= bounds.max;
+  const typedValid = Number.isFinite(typedSeconds) && typedSeconds > 0;
 
   const openTimeEditor = () => {
     const minutes = Math.round(seconds / 60);
@@ -96,7 +91,7 @@ function EditForm({ session }: { session: FocusSession }) {
   };
 
   const step = (direction: 1 | -1) =>
-    setSeconds((s) => stepFocusSeconds(s, direction, bounds));
+    setSeconds((s) => stepFocusSeconds(s, direction));
 
   const save = async () => {
     const actualDurationSeconds = typing ? commitTypedTime() : seconds;
@@ -227,8 +222,7 @@ function EditForm({ session }: { session: FocusSession }) {
                 </View>
               </View>
               <Text style={[styles.range, !typedValid && styles.rangeError]}>
-                Between {formatFocusClock(bounds.min)} and{" "}
-                {formatFocusClock(bounds.max)}
+                Any time above 0:00
               </Text>
               <View style={styles.typedActions}>
                 <Pressable
@@ -266,7 +260,7 @@ function EditForm({ session }: { session: FocusSession }) {
               <StepButton
                 icon="remove"
                 label="1 minute less"
-                disabled={seconds <= bounds.min}
+                disabled={seconds <= 60}
                 onPress={() => step(-1)}
               />
               <Pressable
@@ -293,7 +287,6 @@ function EditForm({ session }: { session: FocusSession }) {
               <StepButton
                 icon="add"
                 label="1 minute more"
-                disabled={seconds >= bounds.max}
                 onPress={() => step(1)}
               />
             </View>
@@ -312,7 +305,6 @@ function EditForm({ session }: { session: FocusSession }) {
             </Text>
           </View>
           <Text style={styles.note}>
-            Max {formatFocusClock(bounds.max)}, the time from start to finish.
             Planned time and date stay as logged.
           </Text>
         </View>

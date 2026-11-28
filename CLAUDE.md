@@ -121,7 +121,7 @@ One log per finished focus session (`focusSessions` collection). Written when th
 - A session only ends when the user taps the Finish CTA. The timer never auto-ends: past the planned time it keeps counting into overtime.
 - `completed` = finished at or after the planned time; `ended_early` = finished before it.
 - Every finished session is logged, however short. There is no minimum duration.
-- **Editing a past session** changes only `task`, `description` and `actualDurationSeconds`; `status` is re-derived from the new time (same rule as above). `actualDurationSeconds` can't exceed the span (`endedAt − startedAt`) and can't go below 1 min (or the logged value, if it was already shorter). `userId`, `plannedDurationSeconds`, `startedAt` and `endedAt` never change — `firestore.rules` enforces this.
+- **Editing a past session** changes only `task`, `description` and `actualDurationSeconds`; `status` is re-derived from the new time (same rule as above). `actualDurationSeconds` can be set to any amount above 0 (no upper limit; it may exceed the span `endedAt − startedAt`). `userId`, `plannedDurationSeconds`, `startedAt` and `endedAt` never change — `firestore.rules` enforces this.
 - **Deleting** removes the log; the focus streak and 7-day stats simply recompute.
 
 ### Focus stats (`utils/focus.ts`)
